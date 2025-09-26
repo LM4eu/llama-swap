@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mostlygeek/llama-swap/event"
+	"github.com/LM4eu/llama-swap/event"
 )
 
 // TokenMetrics represents parsed token statistics from llama-server logs

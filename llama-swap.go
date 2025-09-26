@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/LM4eu/llama-swap/event"
+	"github.com/LM4eu/llama-swap/proxy"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
-	"github.com/mostlygeek/llama-swap/event"
-	"github.com/mostlygeek/llama-swap/proxy"
 )
 
 var (
