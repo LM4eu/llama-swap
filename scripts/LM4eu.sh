@@ -1,0 +1,209 @@
+#!/usr/bin/env bash
+
+# this script applies the LM4eu patches to llama-swap
+
+# Safe bash
+set -e                   # stop the script if any command returns a non-zero status
+set -u                   # unset variable is an error => exit
+set -o pipefail          # pipeline fails if any of its components fails
+set -o noclobber         # prevent accidental file overwriting with > redirection
+shopt -s inherit_errexit # apply these restrictions to $(command substitution)
+
+# Color logs
+log() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
+err() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
+
+# print the script line number if something goes wrong
+set -E
+trap 's=$?; err "exit status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2; exit $s' ERR
+
+cd "${BASH_SOURCE[0]%/*}/.."
+
+(
+    log "switching to latest upstream/main"
+    pwd
+    set -x
+    git fetch --all --prune
+    git status
+    git reset --hard upstream/main
+)
+
+log "replacing README"
+
+cat >| README.md <<'EOL'
+# llama-swap fork
+
+This is a fork of [github/mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap)
+for the project [github/LM4eu/goinfer](https://github.com/LM4eu/goinfer).
+
+## background
+
+Back in 2023, [Goinfer](https://github.com/LM4eu/goinfer)
+was an early local LLM proxy swapping models and supporting
+Ollama, Llama.cpp, and KoboldCpp. To simplify the maintenance,
+we decided in August 2025 to replace our process management with
+another well-maintained project.
+
+As we do not use Ollama / KoboldCpp any more,
+we integrated [llama-swap](https://github.com/mostlygeek/llama-swap)
+into Goinfer to handle communication with `llama-server`.
+
+## issues with github/mostlygeek/llama-swap
+
+1. The command `go get github.com/mostlygeek/llama-swap@v123` fails
+   because the version numbering `v123` does not conform the Go standard `v1.2.3`.
+   The workaround is to use `go get github.com/mostlygeek/llama-swap@main`
+   that sets `v0.0.0-20250925224418-bab7d1f3968a` in `go.mod`.
+
+2. Importing llama-swap using this workaround is not enough
+   because the compilation requires the folder `proxy/ui_dist`
+   that does not exist within the source code.
+
+   ```go
+   //go:embed ui_dist
+   var reactStaticFS embed.FS
+   ```
+
+   The second workaround is to clone llama-swap and use a `go.work` file.
+
+3. At LM4eu, we want to use the web UI of the underlying inference engine (e.g. llama.cpp).
+   But the current llama-swap always require the model name within the client request (JSON).
+   This is not possible to access a web page.
+
+## changes
+
+1. Use version `v0.0.123` compatible with Go expectations.
+2. Add a minimalist `proxy/ui_dist/index.html`.
+3. When no model is specified in the request, llama-swap defaults to the running model (first found).
+
+## roadmap
+
+We will adapt to the upstream project evolutions, while minimizing our patches.
+
+But we may need to add more patches that may pollute the upstream project.
+
+So we prefer to see if the project [github/LM4eu/goinfer](https://github.com/LM4eu/goinfer)
+is successful. In that case we will discuss how to integrate our changes into the upstream project.
+
+## merci
+
+Special thanks to [Benson Wong](https://github.com/mostlygeek)
+for maintaining [llama-swap](https://github.com/mostlygeek/llama-swap)
+with clean and well-documented code.
+
+Compared to some alternatives, we enjoy the readable source code of
+[llama-swap](https://github.com/mostlygeek/llama-swap).
+We also appreciate its author, [Benson Wong](https://github.com/mostlygeek),
+regularly improves the code.
+EOL
+
+(
+    pwd
+    set -x
+    git status
+    git add  README.md
+    git commit -m 'README: explain the LM4eu fork'
+)
+
+(
+    log "replacing mostlygeek/llama-swap -> LM4eu/llama-swap"
+    pwd
+    set -x
+    git status
+    sed 's,module github.com/mostlygeek/llama-swap,module github.com/LM4eu/llama-swap,' -i go.mod
+    git add go.mod
+    find -name "*.go" -exec sed -e 's,"github.com/mostlygeek/llama-swap,"github.com/LM4eu/llama-swap,' -i {} + -exec git add {} +
+    git commit -m "fork mostlygeek -> LM4eu"
+)
+
+(
+    log "adding proxy/ui_dist/index.html"
+    pwd
+    set -x
+    git status
+    mkdir -pv proxy/ui_dist
+)
+
+echo >| proxy/ui_dist/index.html '<!doctype html>
+<html>
+<head><title>llama-swap - Missing UI</title></head>
+<body>
+<h1>llama-swap - Missing UI</h1>
+<p>To build the web static assets:</p>
+<code>
+cd llama-swap/ui <br>
+npm ci --prefer-offline --no-audit --no-fund --omit=dev <br>
+npm run build
+</code>
+<p>Then check the folder <code>proxy/ui_dist</code></p>
+</body>
+</html>' 
+
+(
+    set -x
+    git add -f proxy/ui_dist/index.html
+    git commit -m 'proxy: add default index.html to allow another Go code to import llama-swap' 
+)
+
+
+(
+    log "patching metrics_middleware.go proxymanager.go"
+    pwd
+    set -x
+    git status
+    patch -p1 -u < scripts/LM4eu.patch
+    git add proxy/metrics_middleware.go
+    git add proxy/proxymanager.go
+    git commit -m 'proxy: use current running llama-server when model is not specified'
+)
+
+(
+    log "exporting function: proxyOAIHandler -> ProxyOAIHandler"
+    pwd
+    set -x
+    git status
+    files=$(grep -Fwl proxyOAIHandler proxy/*.go)
+    sed -i 's/\<proxyOAIHandler\>/ProxyOAIHandler/g' $files
+    git add $files
+    git commit -m 'proxy: export proxyOAIHandler -> ProxyOAIHandler'
+)
+
+(
+    log "adding the LM4eu.sh script and patch"
+    pwd
+    set -x
+    git status
+    cd scripts
+    # we keep the original LM4.sh LM4eu.patch as untracked
+    # because Git will remove them when switching to another branch
+    cp LM4.sh    LM4eu.sh
+    cp LM4eu.patch LM4eu.patch
+    sed 's/LM4eu.patch/LM4eu.patch/g' -i LM4eu.sh
+    chmod +x LM4eu.sh 
+    git add  LM4eu.sh
+    git add  LM4eu.patch
+    git commit -m 'add the LM4eu script and patch'
+)
+
+(
+    log "branching and tagging..."
+    pwd
+    # higher version number having a digit
+    version="$(git tag --list --sort -v:refname | grep '[0-9]' -m1)"
+    branch="lm4-$version"
+    digits=${version//[^0-9]/}  # if version=v166 => tag=v0.166.0
+    tag="v0.$digits.0"    
+    log "version=$version  ->  branch=$branch tag=$tag"
+    git status
+    git switch -C "lm4-$version"  # create branch
+    git tag -f "$tag"             # create tag
+)
+
+# list the last 16 commits
+git log -16 --oneline --decorate --graph --date=short --ignore-space-change --ignore-blank-lines --find-copies-harder --follow .
+
+log "success 😀
+       now, push the tag manually:
+
+       git push --tags
+"
