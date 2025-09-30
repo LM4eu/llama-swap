@@ -188,27 +188,27 @@ func (pm *ProxyManager) setupGinEngine() {
 	mm := MetricsMiddleware(pm)
 
 	// Set up routes using the Gin engine
-	pm.ginEngine.POST("/v1/chat/completions", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/chat/completions", mm, pm.ProxyOAIHandler)
 	// Support legacy /v1/completions api, see issue #12
-	pm.ginEngine.POST("/v1/completions", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/completions", mm, pm.ProxyOAIHandler)
 
 	// Support embeddings and reranking
-	pm.ginEngine.POST("/v1/embeddings", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/embeddings", mm, pm.ProxyOAIHandler)
 
 	// llama-server's /reranking endpoint + aliases
-	pm.ginEngine.POST("/reranking", mm, pm.proxyOAIHandler)
-	pm.ginEngine.POST("/rerank", mm, pm.proxyOAIHandler)
-	pm.ginEngine.POST("/v1/rerank", mm, pm.proxyOAIHandler)
-	pm.ginEngine.POST("/v1/reranking", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/reranking", mm, pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/rerank", mm, pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/rerank", mm, pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/reranking", mm, pm.ProxyOAIHandler)
 
 	// llama-server's /infill endpoint for code infilling
-	pm.ginEngine.POST("/infill", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/infill", mm, pm.ProxyOAIHandler)
 
 	// llama-server's /completion endpoint
-	pm.ginEngine.POST("/completion", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/completion", mm, pm.ProxyOAIHandler)
 
 	// Support audio/speech endpoint
-	pm.ginEngine.POST("/v1/audio/speech", pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/audio/speech", pm.ProxyOAIHandler)
 	pm.ginEngine.POST("/v1/audio/transcriptions", pm.proxyOAIPostFormHandler)
 
 	pm.ginEngine.GET("/v1/models", pm.listModelsHandler)
@@ -460,7 +460,7 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 	processGroup.ProxyRequest(realModelName, c.Writer, c.Request)
 }
 
-func (pm *ProxyManager) proxyOAIHandler(c *gin.Context) {
+func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context) {
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		pm.sendErrorResponse(c, http.StatusBadRequest, "could not ready request body")
