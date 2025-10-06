@@ -8,7 +8,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mostlygeek/llama-swap/event"
+	"github.com/LM4eu/llama-swap/event"
 )
 
 type LogLevel int
