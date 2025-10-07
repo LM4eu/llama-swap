@@ -188,35 +188,35 @@ func (pm *ProxyManager) setupGinEngine() {
 	mm := MetricsMiddleware(pm)
 
 	// Set up routes using the Gin engine
-	pm.ginEngine.POST("/v1/chat/completions", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/chat/completions", mm, pm.ProxyOAIHandler)
 	// Support legacy /v1/completions api, see issue #12
-	pm.ginEngine.POST("/v1/completions", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/completions", mm, pm.ProxyOAIHandler)
 
 	// Support embeddings and reranking
-	pm.ginEngine.POST("/v1/embeddings", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/v1/embeddings", mm, pm.ProxyOAIHandler)
 
 	// llama-server's /reranking endpoint + aliases
-	pm.ginEngine.POST("/reranking", mm, pm.proxyOAIHandler)
-	pm.ginEngine.POST("/rerank", mm, pm.proxyOAIHandler)
-	pm.ginEngine.POST("/v1/rerank", mm, pm.proxyOAIHandler)
-	pm.ginEngine.POST("/v1/reranking", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/reranking", mm, pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/rerank", mm, pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/rerank", mm, pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/reranking", mm, pm.ProxyOAIHandler)
 
 	// llama-server's /infill endpoint for code infilling
-	pm.ginEngine.POST("/infill", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/infill", mm, pm.ProxyOAIHandler)
 
 	// llama-server's /completion endpoint
-	pm.ginEngine.POST("/completion", mm, pm.proxyOAIHandler)
+	pm.ginEngine.POST("/completion", mm, pm.ProxyOAIHandler)
 
 	// Support audio/speech endpoint
-	pm.ginEngine.POST("/v1/audio/speech", pm.proxyOAIHandler)
-	pm.ginEngine.POST("/v1/audio/transcriptions", pm.proxyOAIPostFormHandler)
+	pm.ginEngine.POST("/v1/audio/speech", pm.ProxyOAIHandler)
+	pm.ginEngine.POST("/v1/audio/transcriptions", pm.ProxyOAIPostFormHandler)
 
-	pm.ginEngine.GET("/v1/models", pm.listModelsHandler)
+	pm.ginEngine.GET("/v1/models", pm.ListModelsHandler)
 
 	// in proxymanager_loghandlers.go
 	pm.ginEngine.GET("/logs", pm.sendLogsHandlers)
-	pm.ginEngine.GET("/logs/stream", pm.streamLogsHandler)
-	pm.ginEngine.GET("/logs/stream/:logMonitorID", pm.streamLogsHandler)
+	pm.ginEngine.GET("/logs/stream", pm.StreamLogsHandler)
+	pm.ginEngine.GET("/logs/stream/:logMonitorID", pm.StreamLogsHandler)
 
 	/**
 	 * User Interface Endpoints
@@ -224,15 +224,15 @@ func (pm *ProxyManager) setupGinEngine() {
 	// pm.ginEngine.GET("/", func(c *gin.Context) {
 	// 	c.Redirect(http.StatusFound, "/ui")
 	// })
-	pm.ginEngine.GET("/", pm.proxyToFirstRunningProcess)
-	pm.ginEngine.GET("/props", pm.proxyToFirstRunningProcess)
+	pm.ginEngine.GET("/", pm.ProxyToFirstRunningProcess)
+	pm.ginEngine.GET("/props", pm.ProxyToFirstRunningProcess)
 
 	pm.ginEngine.GET("/upstream", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/ui/models")
 	})
 	pm.ginEngine.Any("/upstream/*upstreamPath", pm.proxyToUpstream)
-	pm.ginEngine.GET("/unload", pm.unloadAllModelsHandler)
-	pm.ginEngine.GET("/running", pm.listRunningProcessesHandler)
+	pm.ginEngine.GET("/unload", pm.UnloadAllModelsHandler)
+	pm.ginEngine.GET("/running", pm.ListRunningProcessesHandler)
 	pm.ginEngine.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "OK")
 	})
@@ -349,7 +349,7 @@ func (pm *ProxyManager) swapProcessGroup(requestedModel string) (*ProcessGroup, 
 	return processGroup, realModelName, nil
 }
 
-func (pm *ProxyManager) listModelsHandler(c *gin.Context) {
+func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 	data := make([]gin.H, 0, len(pm.config.Models))
 	createdTime := time.Now().Unix()
 
@@ -467,7 +467,7 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 	processGroup.ProxyRequest(realModelName, c.Writer, c.Request)
 }
 
-func (pm *ProxyManager) proxyOAIHandler(c *gin.Context) {
+func (pm *ProxyManager) ProxyOAIHandler(c *gin.Context) {
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		pm.sendErrorResponse(c, http.StatusBadRequest, "could not ready request body")
@@ -541,7 +541,7 @@ func (pm *ProxyManager) proxyOAIHandler(c *gin.Context) {
 	}
 }
 
-func (pm *ProxyManager) proxyToFirstRunningProcess(c *gin.Context) {
+func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
 	for _, processGroup := range pm.processGroups {
 		for _, process := range processGroup.processes {
 			if process.CurrentState() == StateReady {
@@ -552,7 +552,7 @@ func (pm *ProxyManager) proxyToFirstRunningProcess(c *gin.Context) {
 	}
 	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
 }
-func (pm *ProxyManager) proxyOAIPostFormHandler(c *gin.Context) {
+func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
 		pm.sendErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("error parsing multipart form: %s", err.Error()))
@@ -682,12 +682,12 @@ func (pm *ProxyManager) sendErrorResponse(c *gin.Context, statusCode int, messag
 	}
 }
 
-func (pm *ProxyManager) unloadAllModelsHandler(c *gin.Context) {
+func (pm *ProxyManager) UnloadAllModelsHandler(c *gin.Context) {
 	pm.StopProcesses(StopImmediately)
 	c.String(http.StatusOK, "OK")
 }
 
-func (pm *ProxyManager) listRunningProcessesHandler(context *gin.Context) {
+func (pm *ProxyManager) ListRunningProcessesHandler(context *gin.Context) {
 	context.Header("Content-Type", "application/json")
 	runningProcesses := make([]gin.H, 0) // Default to an empty response.
 
