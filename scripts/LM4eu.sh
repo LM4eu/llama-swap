@@ -10,8 +10,8 @@ set -o noclobber         # prevent accidental file overwriting with > redirectio
 shopt -s inherit_errexit # apply these restrictions to $(command substitution)
 
 # Color logs
-log() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
-err() { echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
+log() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[32m" "$@" "\033[m"; }
+err() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m"; }
 
 # print the script line number if something goes wrong
 set -E
@@ -21,28 +21,26 @@ cd "${BASH_SOURCE[0]%/*}/.."
 pwd
 
 (
-    log "fetch remote repositories"
+    log "switch to latest upstream/main"
     set -x
+    git status
     git fetch --all --prune -t
+    git reset --hard upstream/main
+    git switch main
+    git pull upstream main
+    git status
 )
 
 version="$(git tag --list --sort -v:refname | grep '[0-9]' -m1)"
 digits=${version//[^0-9]/}  # if version=v166 => tag=v0.166.0
-branch="lm4-$digits"
-tag="v0.$digits.0"
-
-(
-    log "switch to latest upstream/main"
-    set -x
-    git status
-    git reset --hard upstream/main
-    git status
-)
+patch="${patch:-0}"
+branch="${branch:-lm4-$digits.$patch}"
+tag="${tag:-v0.$digits.$patch}"
 
 (
     log "found version $version  ->  create branch $branch"
     set -x
-    git switch -C "$branch"
+    git switch --force-create "$branch" # "origin"
     git status
 )
 
@@ -142,12 +140,12 @@ npm run build
 </code>
 <p>Then check the folder <code>proxy/ui_dist</code></p>
 </body>
-</html>' 
+</html>'
 
 (
     set -x
     git add -f proxy/ui_dist/index.html
-    git commit -m 'proxy: add default index.html to allow another Go code to import llama-swap' 
+    git commit -m 'proxy: add default index.html to allow another Go code to import llama-swap'
 )
 
 (
@@ -158,8 +156,24 @@ npm run build
     git add go.mod
     find -name "*.go" -exec sed -i -e 's,"github.com/mostlygeek/llama-swap,"github.com/LM4eu/llama-swap,' {} + -exec git add {} +
     git status
-    go run . -h # smoke test
+    go run . -h  >/dev/null # smoke test
     git commit -m "fork mostlygeek -> LM4eu"
+)
+
+(
+    log "add missing MacroList.MarshalYAML() in proxy/config/config.go"
+    set -x
+    git status
+    cat >> proxy/config/config.go <<-EOF
+		func (ml MacroList) MarshalYAML() (any, error) {
+			if ml == nil {
+				return nil, nil
+			}
+			return ml.ToMap(), nil
+		}
+	EOF
+    go run . -h >/dev/null # smoke test
+    git commit -m 'config: add missing MacroList.MarshalYAML()' proxy/config/config.go
 )
 
 (
@@ -167,7 +181,7 @@ npm run build
     set -x
     git status
     patch -p1 -u < scripts/LM4.patch
-    go run . -h # smoke test
+    go run . -h >/dev/null # smoke test
     git commit -m 'proxy: use current running llama-server when model is not specified' proxy/metrics_middleware.go proxy/proxymanager.go
 )
 
@@ -184,9 +198,9 @@ npm run build
             s/\<listRunningProcessesHandler\>/ListRunningProcessesHandler/g;
     '       proxy/proxymanager.go proxy/proxymanager_loghandlers.go
     git add proxy/proxymanager.go proxy/proxymanager_loghandlers.go
-    go run . -h # smoke test
+    go run . -h  >/dev/null # smoke test
     git commit -m 'proxy: export seven endpoint handlers
-    
+
 Export these endpoint handlers (Capitalize the initial)
 
 1. proxyOAIHandler
@@ -228,7 +242,7 @@ This reduces Goinfer latency and code complexity.'
     set -x
     git switch lm4
     git status
-    git merge "$branch"
+    git merge -X theirs --rerere-autoupdate --verbose --stat --progress --autostash -m "Merge branch '$branch' into lm4" "$branch"
 )
 
 (
