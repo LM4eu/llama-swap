@@ -156,8 +156,32 @@ npm run build
     git add go.mod
     find -name "*.go" -exec sed -i -e 's,"github.com/mostlygeek/llama-swap,"github.com/LM4eu/llama-swap,' {} + -exec git add {} +
     git status
-    go run . -h  >/dev/null # smoke test
+    go run . -h >/dev/null # smoke test
     git commit -m "fork mostlygeek -> LM4eu"
+)
+
+old='"gopkg.in/yaml.v3"'
+new='"go.yaml.in/yaml/v4"'
+
+(
+    log "replace gopkg.in/yaml.v3 -> go.yaml.in/yaml/v3"
+    set -x
+    git status
+    grep --include=*.go -RlF "$old" . | xargs bash -xc "sed -i -e 's|$old|$new|g'"' "$@" ; git add "$@"'
+    git status
+    git commit -m "replace $old -> $new"
+)
+
+(
+    log "refresh go.mod"
+    set -x
+    git status
+    rm go.sum go.mod
+    go mod init github.com/LM4eu/llama-swap
+    go mod tidy
+    git status
+    go run . -h >/dev/null # smoke test
+    git commit -m "go.mod: refresh + replace $old -> $new" go.sum go.mod
 )
 
 (
@@ -198,7 +222,7 @@ npm run build
             s/\<listRunningProcessesHandler\>/ListRunningProcessesHandler/g;
     '       proxy/proxymanager.go proxy/proxymanager_loghandlers.go
     git add proxy/proxymanager.go proxy/proxymanager_loghandlers.go
-    go run . -h  >/dev/null # smoke test
+    go run . -h >/dev/null # smoke test
     git commit -m 'proxy: export seven endpoint handlers
 
 Export these endpoint handlers (Capitalize the initial)
