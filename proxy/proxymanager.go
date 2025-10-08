@@ -221,9 +221,11 @@ func (pm *ProxyManager) setupGinEngine() {
 	/**
 	 * User Interface Endpoints
 	 */
-	pm.ginEngine.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusFound, "/ui")
-	})
+	// pm.ginEngine.GET("/", func(c *gin.Context) {
+	// 	c.Redirect(http.StatusFound, "/ui")
+	// })
+	pm.ginEngine.GET("/", pm.proxyToFirstRunningProcess)
+	pm.ginEngine.GET("/props", pm.proxyToFirstRunningProcess)
 
 	pm.ginEngine.GET("/upstream", func(c *gin.Context) {
 		c.Redirect(http.StatusFound, "/ui/models")
@@ -474,8 +476,18 @@ func (pm *ProxyManager) proxyOAIHandler(c *gin.Context) {
 
 	requestedModel := gjson.GetBytes(bodyBytes, "model").String()
 	if requestedModel == "" {
-		pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' key")
-		return
+		// fallback: the first running process we find
+		for _, processGroup := range pm.processGroups {
+			for _, process := range processGroup.processes {
+				if process.CurrentState() == StateReady {
+					requestedModel = process.ID
+				}
+			}
+		}
+		if requestedModel == "" {
+			pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' key")
+			return
+		}
 	}
 
 	realModelName, found := pm.config.RealModelName(requestedModel)
@@ -529,6 +541,17 @@ func (pm *ProxyManager) proxyOAIHandler(c *gin.Context) {
 	}
 }
 
+func (pm *ProxyManager) proxyToFirstRunningProcess(c *gin.Context) {
+	for _, processGroup := range pm.processGroups {
+		for _, process := range processGroup.processes {
+			if process.CurrentState() == StateReady {
+				process.ProxyRequest(c.Writer, c.Request)
+				return
+			}
+		}
+	}
+	pm.sendErrorResponse(c, http.StatusInternalServerError, "No model currently running. Please select a model.")
+}
 func (pm *ProxyManager) proxyOAIPostFormHandler(c *gin.Context) {
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
@@ -539,8 +562,18 @@ func (pm *ProxyManager) proxyOAIPostFormHandler(c *gin.Context) {
 	// Get model parameter from the form
 	requestedModel := c.Request.FormValue("model")
 	if requestedModel == "" {
-		pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' parameter in form data")
-		return
+		// fallback: the first running process we find
+		for _, processGroup := range pm.processGroups {
+			for _, process := range processGroup.processes {
+				if process.CurrentState() == StateReady {
+					requestedModel = process.ID
+				}
+			}
+		}
+		if requestedModel == "" {
+			pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' parameter in form data")
+			return
+		}
 	}
 
 	processGroup, realModelName, err := pm.swapProcessGroup(requestedModel)
