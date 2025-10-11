@@ -17,7 +17,8 @@ err() { set +x; echo >&2 -e "\033[34m$(date +%H:%M)\033[m \033[31m" "$@" "\033[m
 set -E
 trap 's=$?; err "exit status=$? at ${BASH_SOURCE[0]}:$LINENO" >&2; exit $s' ERR
 
-cd "${BASH_SOURCE[0]%/*}/.."
+dir="${BASH_SOURCE[0]%/*}"
+cd "$dir/.."
 pwd
 
 (
@@ -121,23 +122,22 @@ EOL
 )
 
 (
-    log "add a simple proxy/ui_dist/index.html"
+    log "add a basic proxy/ui_dist/index.html"
     set -x
     git status
     mkdir -pv proxy/ui_dist
 )
 
-echo >| proxy/ui_dist/index.html '<!doctype html>
-<html>
+echo >| proxy/ui_dist/index.html '<html>
 <head><title>llama-swap - Missing UI</title></head>
 <body>
 <h1>llama-swap - Missing UI</h1>
 <p>To build the web static assets:</p>
-<code>
-cd llama-swap/ui <br>
-npm ci --prefer-offline --no-audit --no-fund --omit=dev <br>
+<tt>
+cd llama-swap/ui
+npm ci --prefer-offline --no-audit --no-fund
 npm run build
-</code>
+</tt>
 <p>Then check the folder <code>proxy/ui_dist</code></p>
 </body>
 </html>'
@@ -164,7 +164,7 @@ old='"gopkg.in/yaml.v3"'
 new='"go.yaml.in/yaml/v4"'
 
 (
-    log "replace gopkg.in/yaml.v3 -> go.yaml.in/yaml/v3"
+    log "replace gopkg.in/yaml.v3 -> go.yaml.in/yaml/v4"
     set -x
     git status
     grep --include=*.go -RlF "$old" . | xargs bash -xc "sed -i -e 's|$old|$new|g'"' "$@" ; git add "$@"'
@@ -190,9 +190,6 @@ new='"go.yaml.in/yaml/v4"'
     git status
     cat >> proxy/config/config.go <<-EOF
 		func (ml MacroList) MarshalYAML() (any, error) {
-			if ml == nil {
-				return nil, nil
-			}
 			return ml.ToMap(), nil
 		}
 	EOF
@@ -204,7 +201,7 @@ new='"go.yaml.in/yaml/v4"'
     log "patch metrics_middleware.go proxymanager.go"
     set -x
     git status
-    patch -p1 -u < scripts/LM4.patch
+    patch -p1 -u < "$dir"/LM4eu.patch
     go run . -h >/dev/null # smoke test
     git commit -m 'proxy: use current running llama-server when model is not specified' proxy/metrics_middleware.go proxy/proxymanager.go
 )
@@ -242,17 +239,16 @@ This reduces Goinfer latency and code complexity.'
 )
 
 (
-    log "add the LM4eu.sh script and patch"
+    log "add LM4eu.sh and LM4eu.patch"
     set -x
     git status
-    cd scripts
-    # we keep the original LM4.sh LM4.patch as untracked
+    # we keep the original LM4eu.sh LM4eu.patch as untracked in another folder
     # because Git will remove them when switching to another branch
-    cp LM4.sh    LM4eu.sh
-    cp LM4.patch LM4eu.patch
-    chmod +x LM4eu.sh
-    git add  LM4eu.sh LM4eu.patch
-    git commit -m 'script: add the LM4eu.sh script and the LM4eu.patch'
+    pwd
+    cp -fv "$dir"/LM4eu.sh "$dir"/LM4eu.patch scripts/
+    chmod +x scripts/LM4eu.sh
+    git add  scripts/LM4eu.sh scripts/LM4eu.patch
+    git commit -m 'scripts: add LM4eu.sh and LM4eu.patch'
 )
 
 (
@@ -264,7 +260,10 @@ This reduces Goinfer latency and code complexity.'
 (
     log "merge branch $branch into lm4 (lm4 is the default branch name of the LM4eu fork)"
     set -x
-    git switch lm4
+    git fetch origin                 # fetch the latest from origin
+    #git reset --hard origin/lm4     # unnecessary with `switch -C`
+    git switch -C lm4 origin/lm4    
+    #git branch -u origin/lm4 lm4    # set upstream tracking (already done by `switch -C`)
     git status
     git merge -X theirs --rerere-autoupdate --verbose --stat --progress --autostash -m "Merge branch '$branch' into lm4" "$branch"
 )
