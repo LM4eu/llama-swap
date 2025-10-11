@@ -25,10 +25,9 @@ pwd
     log "switch to latest upstream/main"
     set -x
     git status
-    git fetch --all --prune -t
-    git reset --hard upstream/main
-    git switch main
-    git pull upstream main
+    git fetch upstream --prune -t
+    git reset --hard   upstream/main
+    git switch -C main upstream/main
     git status
 )
 
@@ -160,30 +159,6 @@ npm run build
     git commit -m "fork mostlygeek -> LM4eu"
 )
 
-old='"gopkg.in/yaml.v3"'
-new='"go.yaml.in/yaml/v4"'
-
-(
-    log "replace gopkg.in/yaml.v3 -> go.yaml.in/yaml/v4"
-    set -x
-    git status
-    grep --include=*.go -RlF "$old" . | xargs bash -xc "sed -i -e 's|$old|$new|g'"' "$@" ; git add "$@"'
-    git status
-    git commit -m "replace $old -> $new"
-)
-
-(
-    log "refresh go.mod"
-    set -x
-    git status
-    rm go.sum go.mod
-    go mod init github.com/LM4eu/llama-swap
-    go mod tidy
-    git status
-    go run . -h >/dev/null # smoke test
-    git commit -m "go.mod: refresh + replace $old -> $new" go.sum go.mod
-)
-
 (
     log "add missing MacroList.MarshalYAML() in proxy/config/config.go"
     set -x
@@ -238,6 +213,30 @@ and avoid the HTTP request/response overhead.
 This reduces Goinfer latency and code complexity.'
 )
 
+old='"gopkg.in/yaml.v3"'
+new='"go.yaml.in/yaml/v4"'
+
+(
+    log "replace gopkg.in/yaml.v3 -> go.yaml.in/yaml/v4"
+    set -x
+    git status
+    grep --include=*.go -RlF "$old" . | xargs bash -xc 'set -- "$0" "$@"; sed -i -e '"'s|$old|$new|g'"' "$@" ; git add "$@"'
+    git status
+    git commit -m "replace $old -> $new"
+)
+
+(
+    log "refresh go.mod"
+    set -x
+    git status
+    rm go.sum go.mod
+    go mod init github.com/LM4eu/llama-swap
+    go mod tidy
+    git status
+    go run . -h >/dev/null # smoke test
+    git commit -m "go.mod: refresh + replace $old -> $new" go.sum go.mod
+)
+
 (
     log "add LM4eu.sh and LM4eu.patch"
     set -x
@@ -260,8 +259,8 @@ This reduces Goinfer latency and code complexity.'
 (
     log "merge branch $branch into lm4 (lm4 is the default branch name of the LM4eu fork)"
     set -x
-    git fetch origin                 # fetch the latest from origin
-    #git reset --hard origin/lm4     # unnecessary with `switch -C`
+    git fetch origin
+    #git reset --hard  origin/lm4
     git switch -C lm4 origin/lm4    
     #git branch -u origin/lm4 lm4    # set upstream tracking (already done by `switch -C`)
     git status
