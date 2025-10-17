@@ -599,3 +599,9 @@ func substituteMacroInValue(value any, macroName string, macroValue any) (any, e
 		return value, nil
 	}
 }
+
+
+func (ml MacroList) MarshalYAML() (any, error) {
+	return ml.ToMap(), nil
+}
+
