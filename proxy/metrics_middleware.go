@@ -32,9 +32,19 @@ func MetricsMiddleware(pm *ProxyManager) gin.HandlerFunc {
 
 		requestedModel := gjson.GetBytes(bodyBytes, "model").String()
 		if requestedModel == "" {
-			pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' key")
-			c.Abort()
-			return
+			// fallback: the first running process we find
+			for _, processGroup := range pm.processGroups {
+				for _, process := range processGroup.processes {
+					if process.CurrentState() == StateReady {
+						requestedModel = process.ID
+					}
+				}
+			}
+			if requestedModel == "" {
+				pm.sendErrorResponse(c, http.StatusBadRequest, "missing or invalid 'model' key")
+				c.Abort()
+				return
+			}
 		}
 
 		realModelName, found := pm.config.RealModelName(requestedModel)
