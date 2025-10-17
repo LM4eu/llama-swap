@@ -1,6 +1,6 @@
 module github.com/LM4eu/llama-swap
 
-go 1.25.1
+go 1.25.2
 
 require (
 	github.com/billziss-gh/golib v0.2.0

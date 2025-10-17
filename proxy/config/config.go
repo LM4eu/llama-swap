@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"regexp"
 	"runtime"
@@ -342,6 +343,13 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 			}
 		}
 
+		// Validate the proxy URL.
+		if _, err := url.Parse(modelConfig.Proxy); err != nil {
+			return Config{}, fmt.Errorf(
+				"model %s: invalid proxy URL: %w", modelId, err,
+			)
+		}
+
 		config.Models[modelId] = modelConfig
 	}
 
@@ -591,6 +599,9 @@ func substituteMacroInValue(value any, macroName string, macroValue any) (any, e
 		return value, nil
 	}
 }
+
+
 func (ml MacroList) MarshalYAML() (any, error) {
-return ml.ToMap(), nil
+	return ml.ToMap(), nil
 }
+

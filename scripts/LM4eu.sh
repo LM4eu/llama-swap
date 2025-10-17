@@ -155,7 +155,7 @@ npm run build
     git add go.mod
     find -name "*.go" -exec sed -i -e 's,"github.com/mostlygeek/llama-swap,"github.com/LM4eu/llama-swap,' {} + -exec git add {} +
     git status
-    go run . -h >/dev/null # smoke test
+    go run . -h 2>/dev/null # smoke test
     git commit -m "fork mostlygeek -> LM4eu"
 )
 
@@ -163,12 +163,13 @@ npm run build
     log "add missing MacroList.MarshalYAML() in proxy/config/config.go"
     set -x
     git status
-    cat >> proxy/config/config.go <<-EOF
-		func (ml MacroList) MarshalYAML() (any, error) {
-			return ml.ToMap(), nil
-		}
-	EOF
-    go run . -h >/dev/null # smoke test
+    echo >> proxy/config/config.go "
+
+func (ml MacroList) MarshalYAML() (any, error) {
+	return ml.ToMap(), nil
+}
+"
+    go run . -h 2>/dev/null # smoke test
     git commit -m 'config: add missing MacroList.MarshalYAML()' proxy/config/config.go
 )
 
@@ -177,7 +178,7 @@ npm run build
     set -x
     git status
     patch -p1 -u < "$dir"/LM4eu.patch
-    go run . -h >/dev/null # smoke test
+    go run . -h 2>/dev/null # smoke test
     git commit -m 'proxy: use current running llama-server when model is not specified' proxy/metrics_middleware.go proxy/proxymanager.go
 )
 
@@ -194,7 +195,7 @@ npm run build
             s/\<listRunningProcessesHandler\>/ListRunningProcessesHandler/g;
     '       proxy/proxymanager.go proxy/proxymanager_loghandlers.go
     git add proxy/proxymanager.go proxy/proxymanager_loghandlers.go
-    go run . -h >/dev/null # smoke test
+    go run . -h 2>/dev/null # smoke test
     git commit -m 'proxy: export seven endpoint handlers
 
 Export these endpoint handlers (Capitalize the initial)
@@ -232,8 +233,8 @@ new='"go.yaml.in/yaml/v4"'
     rm go.sum go.mod
     go mod init github.com/LM4eu/llama-swap
     go mod tidy
+    go run . -h 2>/dev/null # smoke test
     git status
-    go run . -h >/dev/null # smoke test
     git commit -m "go.mod: refresh + replace $old -> $new" go.sum go.mod
 )
 
