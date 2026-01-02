@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/LM4eu/llama-swap/event"
+	"github.com/LynxAIeu/llama-swap/event"
 )
 
 type Model struct {
@@ -18,11 +18,13 @@ type Model struct {
 	Description string `json:"description"`
 	State       string `json:"state"`
 	Unlisted    bool   `json:"unlisted"`
+	PeerID      string `json:"peerID"`
 }
 
 func addApiHandlers(pm *ProxyManager) {
 	// Add API endpoints for React to consume
-	apiGroup := pm.ginEngine.Group("/api")
+	// Protected with API key authentication
+	apiGroup := pm.ginEngine.Group("/api", pm.apiKeyAuth())
 	{
 		apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
 		apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
@@ -80,6 +82,18 @@ func (pm *ProxyManager) getModelStatus() []Model {
 			State:       state,
 			Unlisted:    pm.config.Models[modelID].Unlisted,
 		})
+	}
+
+	// Iterate over the peer models
+	if pm.peerProxy != nil {
+		for peerID, peer := range pm.peerProxy.ListPeers() {
+			for _, modelID := range peer.Models {
+				models = append(models, Model{
+					Id:     modelID,
+					PeerID: peerID,
+				})
+			}
+		}
 	}
 
 	return models

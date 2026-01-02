@@ -17,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/LM4eu/llama-swap/event"
-	"github.com/LM4eu/llama-swap/proxy/config"
+	"github.com/LynxAIeu/llama-swap/event"
+	"github.com/LynxAIeu/llama-swap/proxy/config"
 )
 
 type ProcessState string
@@ -256,6 +256,7 @@ func (p *Process) start() error {
 	p.cmd.Env = append(p.cmd.Environ(), p.config.Env...)
 	p.cmd.Cancel = p.cmdStopUpstreamProcess
 	p.cmd.WaitDelay = p.gracefulStopTimeout
+	setProcAttributes(p.cmd)
 
 	p.cmdMutex.Lock()
 	p.cancelUpstream = ctxCancelUpstream
@@ -413,6 +414,9 @@ func (p *Process) stopCommand() {
 	stopStartTime := time.Now()
 	defer func() {
 		p.proxyLogger.Debugf("<%s> stopCommand took %v", p.ID, time.Since(stopStartTime))
+
+		// free the buffer in processLogger so the memory can be recovered
+		p.processLogger.Clear()
 	}()
 
 	p.cmdMutex.RLock()
@@ -506,7 +510,10 @@ func (p *Process) ProxyRequest(w http.ResponseWriter, r *http.Request) {
 		// add a sync so the streaming client only runs when the goroutine has exited
 
 		isStreaming, _ := r.Context().Value(proxyCtxKey("streaming")).(bool)
-		if p.config.SendLoadingState != nil && *p.config.SendLoadingState && isStreaming {
+
+		// PR #417 (no support for anthropic v1/messages yet)
+		isChatCompletions := strings.HasPrefix(r.URL.Path, "/v1/chat/completions")
+		if p.config.SendLoadingState != nil && *p.config.SendLoadingState && isStreaming && isChatCompletions {
 			srw = newStatusResponseWriter(p, w)
 			go srw.statusUpdates(swapCtx)
 		} else {
@@ -625,6 +632,7 @@ func (p *Process) cmdStopUpstreamProcess() error {
 		stopCmd := exec.Command(stopArgs[0], stopArgs[1:]...)
 		stopCmd.Stdout = p.processLogger
 		stopCmd.Stderr = p.processLogger
+		setProcAttributes(stopCmd)
 		stopCmd.Env = p.cmd.Env
 
 		if err := stopCmd.Run(); err != nil {
@@ -639,6 +647,11 @@ func (p *Process) cmdStopUpstreamProcess() error {
 	}
 
 	return nil
+}
+
+// Logger returns the logger for this process.
+func (p *Process) Logger() *LogMonitor {
+	return p.processLogger
 }
 
 var loadingRemarks = []string{
@@ -859,7 +872,6 @@ func (s *statusResponseWriter) WriteHeader(statusCode int) {
 	s.Flush()
 }
 
-// Add Flush method
 func (s *statusResponseWriter) Flush() {
 	if flusher, ok := s.writer.(http.Flusher); ok {
 		flusher.Flush()

@@ -1,11 +1,11 @@
 # llama-swap fork
 
 This is a fork of [github/mostlygeek/llama-swap](https://github.com/mostlygeek/llama-swap)
-for the project [github/LM4eu/goinfer](https://github.com/LM4eu/goinfer).
+for the project [github/LynxAIeu/goinfer](https://github.com/LynxAIeu/goinfer).
 
 ## background
 
-Back in 2023, [Goinfer](https://github.com/LM4eu/goinfer)
+Back in 2023, [Goinfer](https://github.com/LynxAIeu/goinfer)
 was an early local LLM proxy swapping models and supporting
 Ollama, Llamacpp, and KoboldCpp. To simplify the maintenance,
 we decided in August 2025 to replace our process management with
@@ -33,7 +33,7 @@ into Goinfer to handle communication with `llama-server`.
 
    The second workaround is to clone llama-swap and use a `go.work` file.
 
-3. At LM4eu, we want to use the web UI of the underlying inference engine (e.g. llama.cpp).
+3. At LynxAIeu, we want to use the web UI of the underlying inference engine (e.g. llama.cpp).
    But the current llama-swap always require the model name within the client request (JSON).
    This is not possible to access a web page.
 
@@ -49,7 +49,7 @@ We will adapt to the upstream project evolutions, while minimizing our patches.
 
 But we may need to add more patches that may pollute the upstream project.
 
-So we prefer to see if the project [github/LM4eu/goinfer](https://github.com/LM4eu/goinfer)
+So we prefer to see if the project [github/LynxAIeu/goinfer](https://github.com/LynxAIeu/goinfer)
 is successful. In that case we will discuss how to integrate our changes into the upstream project.
 
 ## merci

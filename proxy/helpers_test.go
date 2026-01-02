@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/LM4eu/llama-swap/proxy/config"
+	"github.com/LynxAIeu/llama-swap/proxy/config"
 	"go.yaml.in/yaml/v4"
 )
 

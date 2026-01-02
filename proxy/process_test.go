@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/LM4eu/llama-swap/proxy/config"
+	"github.com/LynxAIeu/llama-swap/proxy/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -395,6 +395,10 @@ func TestProcess_StopImmediately(t *testing.T) {
 // Test that SIGKILL is sent when gracefulStopTimeout is reached and properly terminates
 // the upstream command
 func TestProcess_ForceStopWithKill(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow test")
+	}
+
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping SIGTERM test on Windows ")
 	}
