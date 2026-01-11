@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mostlygeek/llama-swap/event"
+	"github.com/LynxAIeu/llama-swap/event"
 )
 
 // circularBuffer is a fixed-size circular byte buffer that overwrites

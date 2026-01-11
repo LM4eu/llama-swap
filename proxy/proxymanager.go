@@ -16,8 +16,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mostlygeek/llama-swap/event"
-	"github.com/mostlygeek/llama-swap/proxy/config"
+	"github.com/LynxAIeu/llama-swap/event"
+	"github.com/LynxAIeu/llama-swap/proxy/config"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
