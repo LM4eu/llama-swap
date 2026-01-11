@@ -301,16 +301,16 @@ func (pm *ProxyManager) setupGinEngine() {
 	// Support audio/speech endpoint
 	pm.ginEngine.POST("/v1/audio/speech", pm.apiKeyAuth(), pm.proxyInferenceHandler)
 	pm.ginEngine.POST("/v1/audio/voices", pm.apiKeyAuth(), pm.proxyInferenceHandler)
-	pm.ginEngine.POST("/v1/audio/transcriptions", pm.apiKeyAuth(), pm.proxyOAIPostFormHandler)
+	pm.ginEngine.POST("/v1/audio/transcriptions", pm.apiKeyAuth(), pm.ProxyOAIPostFormHandler)
 	pm.ginEngine.POST("/v1/images/generations", pm.apiKeyAuth(), pm.proxyInferenceHandler)
-	pm.ginEngine.POST("/v1/images/edits", pm.apiKeyAuth(), pm.proxyOAIPostFormHandler)
+	pm.ginEngine.POST("/v1/images/edits", pm.apiKeyAuth(), pm.ProxyOAIPostFormHandler)
 
-	pm.ginEngine.GET("/v1/models", pm.apiKeyAuth(), pm.listModelsHandler)
+	pm.ginEngine.GET("/v1/models", pm.apiKeyAuth(), pm.ListModelsHandler)
 
 	// in proxymanager_loghandlers.go
 	pm.ginEngine.GET("/logs", pm.apiKeyAuth(), pm.sendLogsHandlers)
-	pm.ginEngine.GET("/logs/stream", pm.apiKeyAuth(), pm.streamLogsHandler)
-	pm.ginEngine.GET("/logs/stream/*logMonitorID", pm.apiKeyAuth(), pm.streamLogsHandler)
+	pm.ginEngine.GET("/logs/stream", pm.apiKeyAuth(), pm.StreamLogsHandler)
+	pm.ginEngine.GET("/logs/stream/*logMonitorID", pm.apiKeyAuth(), pm.StreamLogsHandler)
 
 	/**
 	 * User Interface Endpoints
@@ -323,8 +323,8 @@ func (pm *ProxyManager) setupGinEngine() {
 		c.Redirect(http.StatusFound, "/ui/models")
 	})
 	pm.ginEngine.Any("/upstream/*upstreamPath", pm.apiKeyAuth(), pm.proxyToUpstream)
-	pm.ginEngine.GET("/unload", pm.apiKeyAuth(), pm.unloadAllModelsHandler)
-	pm.ginEngine.GET("/running", pm.apiKeyAuth(), pm.listRunningProcessesHandler)
+	pm.ginEngine.GET("/unload", pm.apiKeyAuth(), pm.UnloadAllModelsHandler)
+	pm.ginEngine.GET("/running", pm.apiKeyAuth(), pm.ListRunningProcessesHandler)
 	pm.ginEngine.GET("/health", func(c *gin.Context) {
 		c.String(http.StatusOK, "OK")
 	})
@@ -440,7 +440,7 @@ func (pm *ProxyManager) swapProcessGroup(realModelName string) (*ProcessGroup, e
 	return processGroup, nil
 }
 
-func (pm *ProxyManager) listModelsHandler(c *gin.Context) {
+func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 	data := make([]gin.H, 0, len(pm.config.Models))
 	createdTime := time.Now().Unix()
 
@@ -692,7 +692,7 @@ func (pm *ProxyManager) proxyInferenceHandler(c *gin.Context) {
 	}
 }
 
-func (pm *ProxyManager) proxyOAIPostFormHandler(c *gin.Context) {
+func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
 		pm.sendErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("error parsing multipart form: %s", err.Error()))
@@ -879,12 +879,12 @@ func (pm *ProxyManager) apiKeyAuth() gin.HandlerFunc {
 	}
 }
 
-func (pm *ProxyManager) unloadAllModelsHandler(c *gin.Context) {
+func (pm *ProxyManager) UnloadAllModelsHandler(c *gin.Context) {
 	pm.StopProcesses(StopImmediately)
 	c.String(http.StatusOK, "OK")
 }
 
-func (pm *ProxyManager) listRunningProcessesHandler(context *gin.Context) {
+func (pm *ProxyManager) ListRunningProcessesHandler(context *gin.Context) {
 	context.Header("Content-Type", "application/json")
 	runningProcesses := make([]gin.H, 0) // Default to an empty response.
 
