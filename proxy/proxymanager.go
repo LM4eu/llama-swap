@@ -187,7 +187,7 @@ func New(proxyConfig *config.Config) *ProxyManager {
 					proxyLogger.Errorf("Failed to preload model %s: %v", modelID, err)
 					continue
 				} else {
-					req, _ := http.NewRequest(http.MethodGet, "/", nil)
+					req, _ := http.NewRequest(http.MethodGet, "/", http.NoBody)
 					processGroup.ProxyRequest(modelID, discardWriter, req)
 					event.Emit(ModelPreloadedEvent{
 						ModelName: modelID,
