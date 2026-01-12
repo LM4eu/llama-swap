@@ -1345,7 +1345,7 @@ func TestProxyManager_APIKeyAuth_Disabled(t *testing.T) {
 }
 
 // TestProxyManager_PeerProxy_InferenceHandler tests the peerProxy integration
-// in proxyInferenceHandler for issue #433
+// in ProxyInferenceHandler for issue #433
 func TestProxyManager_PeerProxy_InferenceHandler(t *testing.T) {
 	t.Run("requests to peer models are proxied", func(t *testing.T) {
 		// Create a test server to act as the peer

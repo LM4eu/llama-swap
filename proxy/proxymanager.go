@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-		"github.com/LynxAIeu/llama-swap/event"
+	"github.com/LynxAIeu/llama-swap/event"
 	"github.com/LynxAIeu/llama-swap/proxy/config"
-"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
@@ -276,33 +276,33 @@ func (pm *ProxyManager) setupGinEngine() {
 
 	// Set up routes using the Gin engine
 	// Protected routes use pm.apiKeyAuth() middleware
-	pm.ginEngine.POST("/v1/chat/completions", pm.apiKeyAuth(), pm.proxyInferenceHandler)
-	pm.ginEngine.POST("/v1/responses", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/v1/chat/completions", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
+	pm.ginEngine.POST("/v1/responses", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 	// Support legacy /v1/completions api, see issue #12
-	pm.ginEngine.POST("/v1/completions", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/v1/completions", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 	// Support anthropic /v1/messages (added https://github.com/ggml-org/llama.cpp/pull/17570)
-	pm.ginEngine.POST("/v1/messages", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/v1/messages", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 
 	// Support embeddings and reranking
-	pm.ginEngine.POST("/v1/embeddings", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/v1/embeddings", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 
 	// llama-server's /reranking endpoint + aliases
-	pm.ginEngine.POST("/reranking", pm.apiKeyAuth(), pm.proxyInferenceHandler)
-	pm.ginEngine.POST("/rerank", pm.apiKeyAuth(), pm.proxyInferenceHandler)
-	pm.ginEngine.POST("/v1/rerank", pm.apiKeyAuth(), pm.proxyInferenceHandler)
-	pm.ginEngine.POST("/v1/reranking", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/reranking", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
+	pm.ginEngine.POST("/rerank", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
+	pm.ginEngine.POST("/v1/rerank", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
+	pm.ginEngine.POST("/v1/reranking", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 
 	// llama-server's /infill endpoint for code infilling
-	pm.ginEngine.POST("/infill", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/infill", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 
 	// llama-server's /completion endpoint
-	pm.ginEngine.POST("/completion", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/completion", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 
 	// Support audio/speech endpoint
-	pm.ginEngine.POST("/v1/audio/speech", pm.apiKeyAuth(), pm.proxyInferenceHandler)
-	pm.ginEngine.POST("/v1/audio/voices", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/v1/audio/speech", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
+	pm.ginEngine.POST("/v1/audio/voices", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 	pm.ginEngine.POST("/v1/audio/transcriptions", pm.apiKeyAuth(), pm.ProxyOAIPostFormHandler)
-	pm.ginEngine.POST("/v1/images/generations", pm.apiKeyAuth(), pm.proxyInferenceHandler)
+	pm.ginEngine.POST("/v1/images/generations", pm.apiKeyAuth(), pm.ProxyInferenceHandler)
 	pm.ginEngine.POST("/v1/images/edits", pm.apiKeyAuth(), pm.ProxyOAIPostFormHandler)
 
 	pm.ginEngine.GET("/v1/models", pm.apiKeyAuth(), pm.ListModelsHandler)
@@ -603,7 +603,7 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 	}
 }
 
-func (pm *ProxyManager) proxyInferenceHandler(c *gin.Context) {
+func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 	bodyBytes, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		pm.sendErrorResponse(c, http.StatusBadRequest, "could not ready request body")
