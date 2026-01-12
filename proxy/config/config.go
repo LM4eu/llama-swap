@@ -86,7 +86,7 @@ var (
 	macroPatternRegex = regexp.MustCompile(`\$\{([a-zA-Z0-9_-]+)\}`)
 )
 
-// set default values for GroupConfig.
+// UnmarshalYAML sets default values for GroupConfig.
 func (c *GroupConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawGroupConfig GroupConfig
 	defaults := rawGroupConfig{

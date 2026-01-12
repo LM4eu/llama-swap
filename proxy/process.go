@@ -30,7 +30,7 @@ const (
 	StateReady    ProcessState = ProcessState("ready")
 	StateStopping ProcessState = ProcessState("stopping")
 
-	// process is shutdown and will not be restarted
+	// StateShutdown means the process will not be restarted.
 	StateShutdown ProcessState = ProcessState("shutdown")
 )
 
