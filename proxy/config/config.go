@@ -149,21 +149,21 @@ type Config struct {
 	IncludeAliasesInList bool `yaml:"includeAliasesInList"`
 }
 
-func (c *Config) RealModelName(search string) (string, bool) {
-	if _, found := c.Models[search]; found {
+func (cfg *Config) RealModelName(search string) (string, bool) {
+	if _, found := cfg.Models[search]; found {
 		return search, true
-	} else if name, found := c.aliases[search]; found {
+	} else if name, found := cfg.aliases[search]; found {
 		return name, found
 	} else {
 		return "", false
 	}
 }
 
-func (c *Config) FindConfig(modelName string) (*ModelConfig, string, bool) {
-	if realName, found := c.RealModelName(modelName); !found {
+func (cfg *Config) FindConfig(modelName string) (*ModelConfig, string, bool) {
+	if realName, found := cfg.RealModelName(modelName); !found {
 		return nil, "", false
 	} else {
-		return c.Models[realName], realName, true
+		return cfg.Models[realName], realName, true
 	}
 }
 
@@ -183,7 +183,7 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 	}
 
 	// default configuration values
-	config := &Config{
+	cfg := &Config{
 		HealthCheckTimeout: 120,
 		StartPort:          5800,
 		LogLevel:           "info",
@@ -191,34 +191,34 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 		LogToStdout:        LogToStdoutProxy,
 		MetricsMaxInMemory: 1000,
 	}
-	err = yaml.Unmarshal(data, config)
+	err = yaml.Unmarshal(data, cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	if config.HealthCheckTimeout < 15 {
+	if cfg.HealthCheckTimeout < 15 {
 		// set a minimum of 15 seconds
-		config.HealthCheckTimeout = 15
+		cfg.HealthCheckTimeout = 15
 	}
 
-	if config.StartPort < 1 {
+	if cfg.StartPort < 1 {
 		return nil, errors.New("startPort must be greater than 1")
 	}
 
-	switch config.LogToStdout {
+	switch cfg.LogToStdout {
 	case LogToStdoutProxy, LogToStdoutUpstream, LogToStdoutBoth, LogToStdoutNone:
 	default:
 		return nil, errors.New("logToStdout must be one of: proxy, upstream, both, none")
 	}
 
 	// Populate the aliases map
-	config.aliases = make(map[string]string)
-	for modelName, modelConfig := range config.Models {
+	cfg.aliases = make(map[string]string)
+	for modelName, modelConfig := range cfg.Models {
 		for _, alias := range modelConfig.Aliases {
-			if _, found := config.aliases[alias]; found {
+			if _, found := cfg.aliases[alias]; found {
 				return nil, fmt.Errorf("duplicate alias %s found in model: %s", alias, modelName)
 			}
-			config.aliases[alias] = modelName
+			cfg.aliases[alias] = modelName
 		}
 	}
 
@@ -229,7 +229,7 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 	- name can not be any reserved macros: PORT, MODEL_ID
 	- macro values must be less than 1024 characters
 	*/
-	for _, macro := range config.Macros {
+	for _, macro := range cfg.Macros {
 		err = validateMacro(macro.Name, macro.Value)
 		if err != nil {
 			return nil, err
@@ -237,15 +237,15 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 	}
 
 	// Get and sort all model IDs first, makes testing more consistent
-	modelIds := make([]string, 0, len(config.Models))
-	for modelId := range config.Models {
+	modelIds := make([]string, 0, len(cfg.Models))
+	for modelId := range cfg.Models {
 		modelIds = append(modelIds, modelId)
 	}
 	sort.Strings(modelIds) // This guarantees stable iteration order
 
-	nextPort := config.StartPort
+	nextPort := cfg.StartPort
 	for _, modelId := range modelIds {
-		modelConfig := config.Models[modelId]
+		modelConfig := cfg.Models[modelId]
 
 		// Strip comments from command fields before macro expansion
 		modelConfig.Cmd = StripComments(modelConfig.Cmd)
@@ -260,11 +260,11 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 		}
 
 		// Merge global config and model macros. Model macros take precedence
-		mergedMacros := make(MacroList, 0, len(config.Macros)+len(modelConfig.Macros))
+		mergedMacros := make(MacroList, 0, len(cfg.Macros)+len(modelConfig.Macros))
 		mergedMacros = append(mergedMacros, MacroEntry{Name: "MODEL_ID", Value: modelId})
 
 		// Add global macros first
-		mergedMacros = append(mergedMacros, config.Macros...)
+		mergedMacros = append(mergedMacros, cfg.Macros...)
 
 		// Add model macros (can override global)
 		for _, entry := range modelConfig.Macros {
@@ -382,17 +382,17 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 		// if sendLoadingState is nil, set it to the global config value
 		// see #366
 		if modelConfig.SendLoadingState == nil {
-			v := config.SendLoadingState // copy it
+			v := cfg.SendLoadingState // copy it
 			modelConfig.SendLoadingState = &v
 		}
 
-		config.Models[modelId] = modelConfig
+		cfg.Models[modelId] = modelConfig
 	}
 
-	config = AddDefaultGroupToConfig(config)
+	cfg.AddDefaultGroupToConfig()
 	// check that members are all unique in the groups
 	memberUsage := make(map[string]string) // maps member to group it appears in
-	for groupID, groupConfig := range config.Groups {
+	for groupID, groupConfig := range cfg.Groups {
 		prevSet := make(map[string]bool)
 		for _, member := range groupConfig.Members {
 			// Check for duplicates within this group
@@ -410,23 +410,23 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 	}
 
 	// clean up hooks preload
-	if len(config.Hooks.OnStartup.Preload) > 0 {
+	if len(cfg.Hooks.OnStartup.Preload) > 0 {
 		var toPreload []string
-		for _, modelID := range config.Hooks.OnStartup.Preload {
+		for _, modelID := range cfg.Hooks.OnStartup.Preload {
 			modelID = strings.TrimSpace(modelID)
 			if modelID == "" {
 				continue
 			}
-			if real, found := config.RealModelName(modelID); found {
+			if real, found := cfg.RealModelName(modelID); found {
 				toPreload = append(toPreload, real)
 			}
 		}
 
-		config.Hooks.OnStartup.Preload = toPreload
+		cfg.Hooks.OnStartup.Preload = toPreload
 	}
 
 	// check api keys validatity
-	for _, apikey := range config.RequiredAPIKeys {
+	for _, apikey := range cfg.RequiredAPIKeys {
 		if apikey == "" {
 			return nil, errors.New("empty api key found in apiKeys")
 		}
@@ -436,13 +436,13 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 		}
 	}
 
-	return config, nil
+	return cfg, nil
 }
 
 // rewrites the yaml to include a default group with any orphaned models.
-func AddDefaultGroupToConfig(config *Config) *Config {
-	if config.Groups == nil {
-		config.Groups = make(map[string]GroupConfig)
+func AddDefaultGroupToConfig(cfg *Config) *Config {
+	if cfg.Groups == nil {
+		cfg.Groups = make(map[string]GroupConfig)
 	}
 
 	defaultGroup := GroupConfig{
@@ -452,17 +452,17 @@ func AddDefaultGroupToConfig(config *Config) *Config {
 	}
 	// if groups is empty, create a default group and put
 	// all models into it
-	if len(config.Groups) == 0 {
-		for modelName := range config.Models {
+	if len(cfg.Groups) == 0 {
+		for modelName := range cfg.Models {
 			defaultGroup.Members = append(defaultGroup.Members, modelName)
 		}
 	} else {
 		// iterate over existing group members and add non-grouped models into the default group
-		for modelName := range config.Models {
+		for modelName := range cfg.Models {
 			foundModel := false
 		found:
 			// search for the model in existing groups
-			for _, groupConfig := range config.Groups {
+			for _, groupConfig := range cfg.Groups {
 				for _, member := range groupConfig.Members {
 					if member == modelName {
 						foundModel = true
@@ -478,9 +478,9 @@ func AddDefaultGroupToConfig(config *Config) *Config {
 	}
 
 	sort.Strings(defaultGroup.Members) // make consistent ordering for testing
-	config.Groups[DEFAULT_GROUP_ID] = defaultGroup
+	cfg.Groups[DEFAULT_GROUP_ID] = defaultGroup
 
-	return config
+	return cfg
 }
 
 func SanitizeCommand(cmdStr string) ([]string, error) {

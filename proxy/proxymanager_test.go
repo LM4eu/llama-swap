@@ -45,7 +45,7 @@ func CreateTestResponseRecorder() *TestResponseRecorder {
 }
 
 func TestProxyManager_SwapProcessCorrectly(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -54,7 +54,7 @@ func TestProxyManager_SwapProcessCorrectly(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	for _, modelName := range []string{"model1", "model2"} {
@@ -69,7 +69,7 @@ func TestProxyManager_SwapProcessCorrectly(t *testing.T) {
 }
 
 func TestProxyManager_SwapMultiProcess(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -90,7 +90,7 @@ func TestProxyManager_SwapMultiProcess(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	tests := []string{"model1", "model2"}
@@ -114,7 +114,7 @@ func TestProxyManager_SwapMultiProcess(t *testing.T) {
 // Test that a persistent group is not affected by the swapping behavior of
 // other groups.
 func TestProxyManager_PersistentGroupsAreNotSwapped(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"), // goes into the default group
@@ -132,7 +132,7 @@ func TestProxyManager_PersistentGroupsAreNotSwapped(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	// make requests to load all models, loading model1 should not affect model2
@@ -158,7 +158,7 @@ func TestProxyManager_SwapMultiProcessParallelRequests(t *testing.T) {
 		t.Skip("skipping slow test")
 	}
 
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -168,7 +168,7 @@ func TestProxyManager_SwapMultiProcessParallelRequests(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	results := map[string]string{}
@@ -176,7 +176,7 @@ func TestProxyManager_SwapMultiProcessParallelRequests(t *testing.T) {
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	for key := range config.Models {
+	for key := range cfg.Models {
 		wg.Add(1)
 		go func(key string) {
 			defer wg.Done()
@@ -204,7 +204,7 @@ func TestProxyManager_SwapMultiProcessParallelRequests(t *testing.T) {
 	}
 
 	wg.Wait()
-	assert.Len(t, results, len(config.Models))
+	assert.Len(t, results, len(cfg.Models))
 
 	for key, result := range results {
 		assert.Equal(t, key, result)
@@ -413,7 +413,7 @@ models:
 
 func TestProxyManager_ListModelsHandler_SortedByID(t *testing.T) {
 	// Intentionally add models in non-sorted order and with an unlisted model
-	config := &config.Config{
+	cfg := &config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"zeta":  getTestSimpleResponderConfig("zeta"),
@@ -428,7 +428,7 @@ func TestProxyManager_ListModelsHandler_SortedByID(t *testing.T) {
 		LogLevel: "error",
 	}
 
-	proxy := New(config)
+	proxy := New(cfg)
 
 	// Request models list
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
@@ -459,7 +459,7 @@ func TestProxyManager_ListModelsHandler_SortedByID(t *testing.T) {
 
 func TestProxyManager_ListModelsHandler_IncludeAliasesInList(t *testing.T) {
 	// Configure alias
-	config := &config.Config{
+	cfg := &config.Config{
 		HealthCheckTimeout:   15,
 		IncludeAliasesInList: true,
 		Models: map[string]*config.ModelConfig{
@@ -473,7 +473,7 @@ func TestProxyManager_ListModelsHandler_IncludeAliasesInList(t *testing.T) {
 		LogLevel: "error",
 	}
 
-	proxy := New(config)
+	proxy := New(cfg)
 
 	// Request models list
 	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
@@ -537,7 +537,7 @@ func TestProxyManager_Shutdown(t *testing.T) {
 	model3Config := getTestSimpleResponderConfigPort("model3", 9993)
 	model3Config.Proxy = "http://localhost:10003/"
 
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": model1Config,
@@ -553,7 +553,7 @@ func TestProxyManager_Shutdown(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 
 	// Start all the processes
 	var wg sync.WaitGroup
@@ -612,7 +612,7 @@ func TestProxyManager_Unload(t *testing.T) {
 
 func TestProxyManager_UnloadSingleModel(t *testing.T) {
 	const testGroupId = "testGroup"
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -627,7 +627,7 @@ func TestProxyManager_UnloadSingleModel(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopImmediately)
 
 	// start both model
@@ -663,7 +663,7 @@ func TestProxyManager_UnloadSingleModel(t *testing.T) {
 // Test issue #61 `Listing the current list of models and the loaded model.`.
 func TestProxyManager_RunningEndpoint(t *testing.T) {
 	// Shared configuration
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -681,7 +681,7 @@ func TestProxyManager_RunningEndpoint(t *testing.T) {
 	}
 
 	// Create proxy once for all tests
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	t.Run("no models loaded", func(t *testing.T) {
@@ -728,7 +728,7 @@ func TestProxyManager_RunningEndpoint(t *testing.T) {
 }
 
 func TestProxyManager_AudioTranscriptionHandler(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"TheExpectedModel": getTestSimpleResponderConfig("TheExpectedModel"),
@@ -736,7 +736,7 @@ func TestProxyManager_AudioTranscriptionHandler(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	// Create a buffer with multipart form data
@@ -844,7 +844,7 @@ func TestProxyManager_UseModelName(t *testing.T) {
 }
 
 func TestProxyManager_CORSOptionsHandler(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -891,7 +891,7 @@ func TestProxyManager_CORSOptionsHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			proxy := New(config)
+			proxy := New(cfg)
 			defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 			req := httptest.NewRequest(tt.method, "/v1/chat/completions", http.NoBody)
@@ -943,7 +943,7 @@ models:
 }
 
 func TestProxyManager_ChatContentLength(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -951,7 +951,7 @@ func TestProxyManager_ChatContentLength(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	reqBody := fmt.Sprintf(`{"model":"%s", "x": "this is just some content to push the length out a bit"}`, "model1")
@@ -972,7 +972,7 @@ func TestProxyManager_FiltersStripParams(t *testing.T) {
 		StripParams: "temperature, model, stream",
 	}
 
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		LogLevel:           "error",
 		Models: map[string]*config.ModelConfig{
@@ -980,7 +980,7 @@ func TestProxyManager_FiltersStripParams(t *testing.T) {
 		},
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 	reqBody := `{"model":"model1", "temperature":0.1, "x_param":"123", "y_param":"abc", "stream":true}`
 	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewBufferString(reqBody))
@@ -1001,7 +1001,7 @@ func TestProxyManager_FiltersStripParams(t *testing.T) {
 }
 
 func TestProxyManager_HealthEndpoint(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -1009,7 +1009,7 @@ func TestProxyManager_HealthEndpoint(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 	req := httptest.NewRequest(http.MethodGet, "/health", http.NoBody)
 	rec := CreateTestResponseRecorder()
@@ -1020,7 +1020,7 @@ func TestProxyManager_HealthEndpoint(t *testing.T) {
 
 // Ensure the custom llama-server /completion endpoint proxies correctly.
 func TestProxyManager_CompletionEndpoint(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -1028,7 +1028,7 @@ func TestProxyManager_CompletionEndpoint(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	reqBody := `{"model":"model1"}`
@@ -1099,7 +1099,7 @@ models:
 }
 
 func TestProxyManager_StreamingEndpointsReturnNoBufferingHeader(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1":       getTestSimpleResponderConfig("model1"),
@@ -1108,7 +1108,7 @@ func TestProxyManager_StreamingEndpointsReturnNoBufferingHeader(t *testing.T) {
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	endpoints := []string{
@@ -1150,7 +1150,7 @@ func TestProxyManager_StreamingEndpointsReturnNoBufferingHeader(t *testing.T) {
 }
 
 func TestProxyManager_ProxiedStreamingEndpointReturnsNoBufferingHeader(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"streaming-model": getTestSimpleResponderConfig("streaming-model"),
@@ -1158,7 +1158,7 @@ func TestProxyManager_ProxiedStreamingEndpointReturnsNoBufferingHeader(t *testin
 		LogLevel: "error",
 	})
 
-	proxy := New(config)
+	proxy := New(cfg)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	// Make a streaming request
@@ -1175,7 +1175,7 @@ func TestProxyManager_ProxiedStreamingEndpointReturnsNoBufferingHeader(t *testin
 }
 
 func TestProxyManager_ApiGetVersion(t *testing.T) {
-	config := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			"model1": getTestSimpleResponderConfig("model1"),
@@ -1190,7 +1190,7 @@ func TestProxyManager_ApiGetVersion(t *testing.T) {
 		"version":    "v001",
 	}
 
-	proxy := New(config)
+	proxy := New(cfg)
 	proxy.SetVersion(versionTest["build_date"], versionTest["commit"], versionTest["version"])
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
