@@ -431,7 +431,7 @@ func (p *Process) checkHealthEndpoint(healthURL string) error {
 		Timeout: 5000 * time.Millisecond,
 	}
 
-	req, err := http.NewRequest(http.MethodGet, healthURL, nil)
+	req, err := http.NewRequest(http.MethodGet, healthURL, http.NoBody)
 	if err != nil {
 		return err
 	}

@@ -184,7 +184,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -220,7 +220,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -259,7 +259,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -283,7 +283,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -302,7 +302,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -326,7 +326,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -348,7 +348,7 @@ data: [DONE]
 			return expectedErr
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -371,7 +371,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -525,7 +525,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -560,7 +560,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -595,7 +595,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -624,7 +624,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -650,7 +650,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -726,7 +726,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -760,7 +760,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -788,7 +788,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -815,7 +815,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 

@@ -85,7 +85,7 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 	for _, modelName := range tests {
 		go func(modelName string) {
 			defer wg.Done()
-			req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+			req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", http.NoBody)
 			w := httptest.NewRecorder()
 			assert.NoError(t, pg.ProxyRequest(modelName, w, req))
 			assert.Equal(t, http.StatusOK, w.Code)

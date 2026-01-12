@@ -239,7 +239,7 @@ func TestProxyManager_ListModelsHandler(t *testing.T) {
 	proxy := New(cfg)
 
 	// Create a test request
-	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
 	req.Header.Add("Origin", "i-am-the-origin")
 	w := CreateTestResponseRecorder()
 
@@ -355,7 +355,7 @@ models:
 
 	proxy := New(processedConfig)
 
-	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
 	w := CreateTestResponseRecorder()
 	proxy.ServeHTTP(w, req)
 
@@ -431,7 +431,7 @@ func TestProxyManager_ListModelsHandler_SortedByID(t *testing.T) {
 	proxy := New(config)
 
 	// Request models list
-	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
 	w := CreateTestResponseRecorder()
 	proxy.ServeHTTP(w, req)
 
@@ -476,7 +476,7 @@ func TestProxyManager_ListModelsHandler_IncludeAliasesInList(t *testing.T) {
 	proxy := New(config)
 
 	// Request models list
-	req := httptest.NewRequest(http.MethodGet, "/v1/models", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/models", http.NoBody)
 	w := CreateTestResponseRecorder()
 	proxy.ServeHTTP(w, req)
 
@@ -595,7 +595,7 @@ func TestProxyManager_Unload(t *testing.T) {
 	proxy.ServeHTTP(w, req)
 
 	assert.Equal(t, StateReady, proxy.processGroups[config.DEFAULT_GROUP_ID].processes["model1"].CurrentState())
-	req = httptest.NewRequest(http.MethodGet, "/unload", nil)
+	req = httptest.NewRequest(http.MethodGet, "/unload", http.NoBody)
 	w = CreateTestResponseRecorder()
 	proxy.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -641,7 +641,7 @@ func TestProxyManager_UnloadSingleModel(t *testing.T) {
 	assert.Equal(t, StateReady, proxy.processGroups[testGroupId].processes["model1"].CurrentState())
 	assert.Equal(t, StateReady, proxy.processGroups[testGroupId].processes["model2"].CurrentState())
 
-	req := httptest.NewRequest(http.MethodPost, "/api/models/unload/model1", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/models/unload/model1", http.NoBody)
 	w := CreateTestResponseRecorder()
 	proxy.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -685,7 +685,7 @@ func TestProxyManager_RunningEndpoint(t *testing.T) {
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	t.Run("no models loaded", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/running", nil)
+		req := httptest.NewRequest(http.MethodGet, "/running", http.NoBody)
 		w := CreateTestResponseRecorder()
 		proxy.ServeHTTP(w, req)
 
@@ -709,7 +709,7 @@ func TestProxyManager_RunningEndpoint(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		// Simulate browser call for the `/running` endpoint.
-		req = httptest.NewRequest(http.MethodGet, "/running", nil)
+		req = httptest.NewRequest(http.MethodGet, "/running", http.NoBody)
 		w = CreateTestResponseRecorder()
 		proxy.ServeHTTP(w, req)
 
@@ -894,7 +894,7 @@ func TestProxyManager_CORSOptionsHandler(t *testing.T) {
 			proxy := New(config)
 			defer proxy.StopProcesses(StopWaitForInflightRequest)
 
-			req := httptest.NewRequest(tt.method, "/v1/chat/completions", nil)
+			req := httptest.NewRequest(tt.method, "/v1/chat/completions", http.NoBody)
 			for k, v := range tt.requestHeaders {
 				req.Header.Set(k, v)
 			}
@@ -926,7 +926,7 @@ models:
 	proxy := New(config)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 	t.Run("main model name", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/upstream/model1/test", nil)
+		req := httptest.NewRequest(http.MethodGet, "/upstream/model1/test", http.NoBody)
 		rec := CreateTestResponseRecorder()
 		proxy.ServeHTTP(rec, req)
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -934,7 +934,7 @@ models:
 	})
 
 	t.Run("model alias", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/upstream/model-alias/test", nil)
+		req := httptest.NewRequest(http.MethodGet, "/upstream/model-alias/test", http.NoBody)
 		rec := CreateTestResponseRecorder()
 		proxy.ServeHTTP(rec, req)
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -1011,7 +1011,7 @@ func TestProxyManager_HealthEndpoint(t *testing.T) {
 
 	proxy := New(config)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequest(http.MethodGet, "/health", http.NoBody)
 	rec := CreateTestResponseRecorder()
 	proxy.ServeHTTP(rec, req)
 	assert.Equal(t, http.StatusOK, rec.Code)
@@ -1124,7 +1124,7 @@ func TestProxyManager_StreamingEndpointsReturnNoBufferingHeader(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 			defer cancel()
 
-			req := httptest.NewRequest(http.MethodGet, endpoint, nil)
+			req := httptest.NewRequest(http.MethodGet, endpoint, http.NoBody)
 			req = req.WithContext(ctx)
 			rec := CreateTestResponseRecorder()
 
@@ -1194,7 +1194,7 @@ func TestProxyManager_ApiGetVersion(t *testing.T) {
 	proxy.SetVersion(versionTest["build_date"], versionTest["commit"], versionTest["version"])
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/version", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/version", http.NoBody)
 	w := CreateTestResponseRecorder()
 
 	proxy.ServeHTTP(w, req)
