@@ -138,7 +138,7 @@ func newProxy(url *url.URL) *proxyServer {
 		for {
 			slog.Debug("connecting to SSE endpoint", "url", eventsUrl)
 
-			req, err := http.NewRequest(http.MethodGet, eventsUrl, nil)
+			req, err := http.NewRequest(http.MethodGet, eventsUrl, http.NoBody)
 			if err != nil {
 				slog.Warn("failed to create SSE request", "error", err)
 				proxy.setStatus(notready)
