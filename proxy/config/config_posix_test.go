@@ -91,10 +91,7 @@ models:
 
 func TestConfig_LoadPosix(t *testing.T) {
 	// Create a temporary YAML file for testing
-	tempDir, err := os.MkdirTemp("", "test-config")
-	if err != nil {
-		t.Fatalf("Failed to create temporary directory: %v", err)
-	}
+	tempDir := t.TempDir()
 	defer os.RemoveAll(tempDir)
 
 	tempFile := filepath.Join(tempDir, "config.yaml")
