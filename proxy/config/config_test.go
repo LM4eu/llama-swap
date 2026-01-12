@@ -551,11 +551,11 @@ models:
 	assert.NotNil(t, meta)
 
 	// Verify direct substitution preserves types
-	assert.Equal(t, 10001, meta["port"])
+	assert.Equal(t, uint64(10001), meta["port"])
 	assert.Equal(t, 0.7, meta["temperature"])
 	assert.Equal(t, true, meta["enabled"])
 	assert.Equal(t, "llama model", meta["model_name"])
-	assert.Equal(t, 16384, meta["context"])
+	assert.Equal(t, uint64(16384), meta["context"])
 
 	// Verify string interpolation converts to string
 	assert.Equal(t, "Running on port 10001 with temp 0.7 and context 16384", meta["note"])
