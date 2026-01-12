@@ -70,7 +70,7 @@ func TestConfig_FindConfig(t *testing.T) {
 	// TODO?
 	// make make this shared between the different tests
 	config := &Config{
-		Models: map[string]ModelConfig{
+		Models: map[string]*ModelConfig{
 			"model1": {
 				Cmd:           "python model1.py",
 				Proxy:         "http://localhost:8080",
@@ -110,7 +110,7 @@ func TestConfig_FindConfig(t *testing.T) {
 	modelConfig, modelId, found = config.FindConfig("model3")
 	assert.False(t, found)
 	assert.Equal(t, "", modelId)
-	assert.Equal(t, ModelConfig{}, modelConfig)
+	assert.Nil(t, modelConfig)
 }
 
 func TestConfig_AutomaticPortAssignments(t *testing.T) {

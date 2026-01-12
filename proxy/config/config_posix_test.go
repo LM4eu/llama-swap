@@ -177,7 +177,7 @@ groups:
 			},
 		},
 		SendLoadingState: false,
-		Models: map[string]ModelConfig{
+		Models: map[string]*ModelConfig{
 			"model1": {
 				Cmd:              "path/to/cmd --arg1 one",
 				Proxy:            "http://localhost:8080",

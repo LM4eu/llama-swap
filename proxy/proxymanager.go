@@ -446,7 +446,7 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 	data := make([]gin.H, 0, len(pm.config.Models))
 	createdTime := time.Now().Unix()
 
-	newRecord := func(modelId string, modelConfig config.ModelConfig) gin.H {
+	newRecord := func(modelId string, modelConfig *config.ModelConfig) gin.H {
 		record := gin.H{
 			"id":       modelId,
 			"object":   "model",
@@ -492,7 +492,7 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 			// add peer models
 			for _, modelID := range peer.Models {
 				// Skip unlisted models if not showing them
-				record := newRecord(modelID, config.ModelConfig{
+				record := newRecord(modelID, &config.ModelConfig{
 					Name: fmt.Sprintf("%s: %s", peerID, modelID),
 					Metadata: map[string]any{
 						"peerID": peerID,

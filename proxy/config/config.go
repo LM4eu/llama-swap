@@ -122,7 +122,7 @@ type Config struct {
 	LogTimeFormat      string                 `yaml:"logTimeFormat"`
 	LogToStdout        string                 `yaml:"logToStdout"`
 	MetricsMaxInMemory int                    `yaml:"metricsMaxInMemory"`
-	Models             map[string]ModelConfig `yaml:"models"` /* key is model ID */
+	Models             map[string]*ModelConfig `yaml:"models"` /* key is model ID */
 	Profiles           map[string][]string    `yaml:"profiles"`
 	Groups             map[string]GroupConfig `yaml:"groups"` /* key is group ID */
 
@@ -161,9 +161,9 @@ func (c *Config) RealModelName(search string) (string, bool) {
 	}
 }
 
-func (c *Config) FindConfig(modelName string) (ModelConfig, string, bool) {
+func (c *Config) FindConfig(modelName string) (*ModelConfig, string, bool) {
 	if realName, found := c.RealModelName(modelName); !found {
-		return ModelConfig{}, "", false
+		return nil, "", false
 	} else {
 		return c.Models[realName], realName, true
 	}
