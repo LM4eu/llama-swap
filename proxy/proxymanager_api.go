@@ -40,8 +40,8 @@ func (pm *ProxyManager) getModelStatus() []Model {
 	// Extract keys and sort them
 	models := []Model{}
 
-	modelIDs := make([]string, 0, len(pm.config.Models))
-	for modelID := range pm.config.Models {
+	modelIDs := make([]string, 0, len(pm.cfg.Models))
+	for modelID := range pm.cfg.Models {
 		modelIDs = append(modelIDs, modelID)
 	}
 	sort.Strings(modelIDs)
@@ -74,10 +74,10 @@ func (pm *ProxyManager) getModelStatus() []Model {
 		}
 		models = append(models, Model{
 			Id:          modelID,
-			Name:        pm.config.Models[modelID].Name,
-			Description: pm.config.Models[modelID].Description,
+			Name:        pm.cfg.Models[modelID].Name,
+			Description: pm.cfg.Models[modelID].Description,
 			State:       state,
-			Unlisted:    pm.config.Models[modelID].Unlisted,
+			Unlisted:    pm.cfg.Models[modelID].Unlisted,
 		})
 	}
 
@@ -219,7 +219,7 @@ func (pm *ProxyManager) apiGetMetrics(c *gin.Context) {
 
 func (pm *ProxyManager) apiUnloadSingleModelHandler(c *gin.Context) {
 	requestedModel := strings.TrimPrefix(c.Param("model"), "/")
-	realModelName, found := pm.config.RealModelName(requestedModel)
+	realModelName, found := pm.cfg.RealModelName(requestedModel)
 	if !found {
 		pm.sendErrorResponse(c, http.StatusNotFound, "Model not found")
 		return

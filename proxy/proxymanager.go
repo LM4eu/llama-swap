@@ -37,7 +37,7 @@ type ProxyManager struct {
 	upstreamLogger *LogMonitor
 	muxLogger      *LogMonitor
 	processGroups  map[string]*ProcessGroup
-	config         *config.Config
+	cfg            *config.Config
 	shutdownCancel context.CancelFunc
 	peerProxy      *PeerProxy
 	buildDate      string
@@ -46,11 +46,11 @@ type ProxyManager struct {
 	sync.Mutex
 }
 
-func New(proxyConfig *config.Config) *ProxyManager {
+func New(cfg *config.Config) *ProxyManager {
 	// set up loggers
 
 	var muxLogger, upstreamLogger, proxyLogger *LogMonitor
-	switch proxyConfig.LogToStdout {
+	switch cfg.LogToStdout {
 	case config.LogToStdoutNone:
 		muxLogger = NewLogMonitorWriter(io.Discard)
 		upstreamLogger = NewLogMonitorWriter(io.Discard)
@@ -72,11 +72,11 @@ func New(proxyConfig *config.Config) *ProxyManager {
 		proxyLogger = NewLogMonitorWriter(muxLogger)
 	}
 
-	if proxyConfig.LogRequests {
+	if cfg.LogRequests {
 		proxyLogger.Warn("LogRequests configuration is deprecated. Use logLevel instead.")
 	}
 
-	switch strings.ToLower(strings.TrimSpace(proxyConfig.LogLevel)) {
+	switch strings.ToLower(strings.TrimSpace(cfg.LogLevel)) {
 	case "debug":
 		proxyLogger.SetLogLevel(LevelDebug)
 		upstreamLogger.SetLogLevel(LevelDebug)
@@ -113,7 +113,7 @@ func New(proxyConfig *config.Config) *ProxyManager {
 		"stampnano":   time.StampNano,
 	}
 
-	if timeFormat, ok := timeFormats[strings.ToLower(strings.TrimSpace(proxyConfig.LogTimeFormat))]; ok {
+	if timeFormat, ok := timeFormats[strings.ToLower(strings.TrimSpace(cfg.LogTimeFormat))]; ok {
 		proxyLogger.SetLogTimeFormat(timeFormat)
 		upstreamLogger.SetLogTimeFormat(timeFormat)
 	}
@@ -121,20 +121,20 @@ func New(proxyConfig *config.Config) *ProxyManager {
 	shutdownCtx, shutdownCancel := context.WithCancel(context.Background())
 
 	var maxMetrics int
-	if proxyConfig.MetricsMaxInMemory <= 0 {
+	if cfg.MetricsMaxInMemory <= 0 {
 		maxMetrics = 1000 // Default fallback
 	} else {
-		maxMetrics = proxyConfig.MetricsMaxInMemory
+		maxMetrics = cfg.MetricsMaxInMemory
 	}
 
-	peerProxy, err := NewPeerProxy(proxyConfig.Peers, proxyLogger)
+	peerProxy, err := NewPeerProxy(cfg.Peers, proxyLogger)
 	if err != nil {
 		proxyLogger.Errorf("Disabling Peering. Failed to create proxy peers: %v", err)
 		peerProxy = nil
 	}
 
 	pm := &ProxyManager{
-		config:    proxyConfig,
+		cfg:       cfg,
 		ginEngine: gin.New(),
 
 		proxyLogger:    proxyLogger,
@@ -156,20 +156,20 @@ func New(proxyConfig *config.Config) *ProxyManager {
 	}
 
 	// create the process groups
-	for groupID := range proxyConfig.Groups {
-		processGroup := NewProcessGroup(groupID, proxyConfig, proxyLogger, upstreamLogger)
+	for groupID := range cfg.Groups {
+		processGroup := NewProcessGroup(groupID, cfg, proxyLogger, upstreamLogger)
 		pm.processGroups[groupID] = processGroup
 	}
 
 	pm.setupGinEngine()
 
 	// run any startup hooks
-	if len(proxyConfig.Hooks.OnStartup.Preload) > 0 {
+	if len(cfg.Hooks.OnStartup.Preload) > 0 {
 		// do it in the background, don't block startup -- not sure if good idea yet
 		go func() {
 			discardWriter := &DiscardWriter{}
-			for _, preloadModelName := range proxyConfig.Hooks.OnStartup.Preload {
-				modelID, ok := proxyConfig.RealModelName(preloadModelName)
+			for _, preloadModelName := range cfg.Hooks.OnStartup.Preload {
+				modelID, ok := cfg.RealModelName(preloadModelName)
 
 				if !ok {
 					proxyLogger.Warnf("Preload model %s not found in config", preloadModelName)
@@ -429,7 +429,7 @@ func (pm *ProxyManager) swapProcessGroup(realModelName string) (*ProcessGroup, e
 }
 
 func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
-	data := make([]gin.H, 0, len(pm.config.Models))
+	data := make([]gin.H, 0, len(pm.cfg.Models))
 	createdTime := time.Now().Unix()
 
 	newRecord := func(modelId string, modelConfig *config.ModelConfig) gin.H {
@@ -456,7 +456,7 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 		return record
 	}
 
-	for id, modelConfig := range pm.config.Models {
+	for id, modelConfig := range pm.cfg.Models {
 		if modelConfig.Unlisted {
 			continue
 		}
@@ -464,7 +464,7 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 		data = append(data, newRecord(id, modelConfig))
 
 		// Include aliases
-		if pm.config.IncludeAliasesInList {
+		if pm.cfg.IncludeAliasesInList {
 			for _, alias := range modelConfig.Aliases {
 				if alias := strings.TrimSpace(alias); alias != "" {
 					data = append(data, newRecord(alias, modelConfig))
@@ -528,7 +528,7 @@ func (pm *ProxyManager) findModelInPath(path string) (searchName, realName, rema
 			searchModelName = searchModelName + "/" + part
 		}
 
-		if modelID, ok := pm.config.RealModelName(searchModelName); ok {
+		if modelID, ok := pm.cfg.RealModelName(searchModelName); ok {
 			return searchModelName, modelID, "/" + strings.Join(parts[i+1:], "/"), true
 		}
 	}
@@ -617,7 +617,7 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 	// Look for a matching local model first
 	var nextHandler func(modelID string, w http.ResponseWriter, r *http.Request) error
 
-	modelID, found := pm.config.RealModelName(requestedModel)
+	modelID, found := pm.cfg.RealModelName(requestedModel)
 	if found {
 		processGroup, err := pm.swapProcessGroup(modelID)
 		if err != nil {
@@ -626,7 +626,7 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 		}
 
 		// issue #69 allow custom model names to be sent to upstream
-		useModelName := pm.config.Models[modelID].UseModelName
+		useModelName := pm.cfg.Models[modelID].UseModelName
 		if useModelName != "" {
 			bodyBytes, err = sjson.SetBytes(bodyBytes, "model", useModelName)
 			if err != nil {
@@ -636,9 +636,9 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 		}
 
 		// issue #174 strip parameters from the JSON body
-		stripParams, err := pm.config.Models[modelID].Filters.SanitizedStripParams()
+		stripParams, err := pm.cfg.Models[modelID].Filters.SanitizedStripParams()
 		if err != nil { // just log it and continue
-			pm.proxyLogger.Errorf("Error sanitizing strip params string: %s, %s", pm.config.Models[modelID].Filters.StripParams, err.Error())
+			pm.proxyLogger.Errorf("Error sanitizing strip params string: %s, %s", pm.cfg.Models[modelID].Filters.StripParams, err.Error())
 		} else {
 			for _, param := range stripParams {
 				pm.proxyLogger.Debugf("<%s> stripping param: %s", modelID, param)
@@ -717,7 +717,7 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 		}
 	}
 
-	modelID, found := pm.config.RealModelName(requestedModel)
+	modelID, found := pm.cfg.RealModelName(requestedModel)
 	if !found {
 		pm.sendErrorResponse(c, http.StatusBadRequest, "could not find real modelID for "+requestedModel)
 		return
@@ -740,7 +740,7 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 			// If this is the model field and we have a profile, use just the model name
 			if key == "model" {
 				// # issue #69 allow custom model names to be sent to upstream
-				useModelName := pm.config.Models[modelID].UseModelName
+				useModelName := pm.cfg.Models[modelID].UseModelName
 
 				if useModelName != "" {
 					value = useModelName
@@ -831,7 +831,7 @@ func (pm *ProxyManager) sendErrorResponse(c *gin.Context, statusCode int, messag
 // apiKeyAuth returns a middleware that validates API keys if configured.
 // Returns a pass-through handler if no API keys are configured.
 func (pm *ProxyManager) apiKeyAuth() gin.HandlerFunc {
-	if len(pm.config.RequiredAPIKeys) == 0 {
+	if len(pm.cfg.RequiredAPIKeys) == 0 {
 		return func(c *gin.Context) { c.Next() }
 	}
 
@@ -866,7 +866,7 @@ func (pm *ProxyManager) apiKeyAuth() gin.HandlerFunc {
 		}
 
 		// Validate key
-		valid := slices.Contains(pm.config.RequiredAPIKeys, providedKey)
+		valid := slices.Contains(pm.cfg.RequiredAPIKeys, providedKey)
 
 		if !valid {
 			c.Header("WWW-Authenticate", `Basic realm="llama-swap"`)
