@@ -11,36 +11,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var processGroupTestConfig = config.AddDefaultGroupToConfig(&config.Config{
-	HealthCheckTimeout: 15,
-	Models: map[string]*config.ModelConfig{
-		"model1": getTestSimpleResponderConfig("model1"),
-		"model2": getTestSimpleResponderConfig("model2"),
-		"model3": getTestSimpleResponderConfig("model3"),
-		"model4": getTestSimpleResponderConfig("model4"),
-		"model5": getTestSimpleResponderConfig("model5"),
-	},
-	Groups: map[string]config.GroupConfig{
-		"G1": {
-			Swap:      true,
-			Exclusive: true,
-			Members:   []string{"model1", "model2"},
+func makeConfig() *config.Config {
+	cfg := &config.Config{
+		HealthCheckTimeout: 15,
+		Models: map[string]*config.ModelConfig{
+			"model1": getTestSimpleResponderConfig("model1"),
+			"model2": getTestSimpleResponderConfig("model2"),
+			"model3": getTestSimpleResponderConfig("model3"),
+			"model4": getTestSimpleResponderConfig("model4"),
+			"model5": getTestSimpleResponderConfig("model5"),
 		},
-		"G2": {
-			Swap:      false,
-			Exclusive: true,
-			Members:   []string{"model3", "model4"},
+		Groups: map[string]config.GroupConfig{
+			"G1": {
+				Swap:      true,
+				Exclusive: true,
+				Members:   []string{"model1", "model2"},
+			},
+			"G2": {
+				Swap:      false,
+				Exclusive: true,
+				Members:   []string{"model3", "model4"},
+			},
 		},
-	},
-})
+	}
+	cfg.AddDefaultGroupToConfig()
+	return cfg
+}
 
 func TestProcessGroup_DefaultHasCorrectModel(t *testing.T) {
-	pg := NewProcessGroup(config.DEFAULT_GROUP_ID, processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup(config.DEFAULT_GROUP_ID, makeConfig(), testLogger, testLogger)
 	assert.True(t, pg.HasMember("model5"))
 }
 
 func TestProcessGroup_HasMember(t *testing.T) {
-	pg := NewProcessGroup("G1", processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup("G1", makeConfig(), testLogger, testLogger)
 	assert.True(t, pg.HasMember("model1"))
 	assert.True(t, pg.HasMember("model2"))
 	assert.False(t, pg.HasMember("model3"))
@@ -53,7 +57,7 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 		t.Skip("skipping slow test")
 	}
 
-	processGroupTestConfig := config.AddDefaultGroupToConfig(&config.Config{
+	cfg := &config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			// use the same listening so if a model is already running, it will fail
@@ -72,9 +76,10 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 				Members: []string{"model1", "model2", "model3", "model4", "model5"},
 			},
 		},
-	})
+	}
+	cfg.AddDefaultGroupToConfig()
 
-	pg := NewProcessGroup("G1", processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup("G1", cfg, testLogger, testLogger)
 	defer pg.StopProcesses(StopWaitForInflightRequest)
 
 	tests := []string{"model1", "model2", "model3", "model4", "model5"}
@@ -96,7 +101,7 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 }
 
 func TestProcessGroup_ProxyRequestSwapIsFalse(t *testing.T) {
-	pg := NewProcessGroup("G2", processGroupTestConfig, testLogger, testLogger)
+	pg := NewProcessGroup("G2", makeConfig(), testLogger, testLogger)
 	defer pg.StopProcesses(StopWaitForInflightRequest)
 
 	tests := []string{"model3", "model4"}

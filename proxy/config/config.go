@@ -440,7 +440,7 @@ func LoadConfigFromReader(r io.Reader) (*Config, error) {
 }
 
 // rewrites the yaml to include a default group with any orphaned models.
-func AddDefaultGroupToConfig(cfg *Config) *Config {
+func (cfg *Config) AddDefaultGroupToConfig() {
 	if cfg.Groups == nil {
 		cfg.Groups = make(map[string]GroupConfig)
 	}
@@ -479,8 +479,6 @@ func AddDefaultGroupToConfig(cfg *Config) *Config {
 
 	sort.Strings(defaultGroup.Members) // make consistent ordering for testing
 	cfg.Groups[DEFAULT_GROUP_ID] = defaultGroup
-
-	return cfg
 }
 
 func SanitizeCommand(cmdStr string) ([]string, error) {
