@@ -42,8 +42,8 @@ const (
 )
 
 type Process struct {
-	config                    config.ModelConfig
 	lastRequestHandled        time.Time
+	config                    *config.ModelConfig
 	cmd                       *exec.Cmd
 	reverseProxy              *httputil.ReverseProxy
 	concurrencyLimitSemaphore chan struct{}
@@ -91,7 +91,7 @@ func NewProcess(ID string, healthCheckTimeout int, config *config.ModelConfig, p
 
 	return &Process{
 		ID:                      ID,
-		config:                  *config,
+		config:                  config,
 		cmd:                     nil,
 		reverseProxy:            reverseProxy,
 		cancelUpstream:          nil,
