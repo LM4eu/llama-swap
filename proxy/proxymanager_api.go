@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/LynxAIeu/llama-swap/event"
+	"github.com/gin-gonic/gin"
 )
 
 type Model struct {

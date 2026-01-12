@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/LynxAIeu/llama-swap/event"
+		"github.com/LynxAIeu/llama-swap/event"
 	"github.com/LynxAIeu/llama-swap/proxy/config"
+"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
