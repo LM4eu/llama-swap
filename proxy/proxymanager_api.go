@@ -24,13 +24,11 @@ func addApiHandlers(pm *ProxyManager) {
 	// Add API endpoints for React to consume
 	// Protected with API key authentication
 	apiGroup := pm.ginEngine.Group("/api", pm.apiKeyAuth())
-	{
-		apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
-		apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
-		apiGroup.GET("/events", pm.apiSendEvents)
-		apiGroup.GET("/metrics", pm.apiGetMetrics)
-		apiGroup.GET("/version", pm.apiGetVersion)
-	}
+	apiGroup.POST("/models/unload", pm.apiUnloadAllModels)
+	apiGroup.POST("/models/unload/*model", pm.apiUnloadSingleModelHandler)
+	apiGroup.GET("/events", pm.apiSendEvents)
+	apiGroup.GET("/metrics", pm.apiGetMetrics)
+	apiGroup.GET("/version", pm.apiGetVersion)
 }
 
 func (pm *ProxyManager) apiUnloadAllModels(c *gin.Context) {
