@@ -309,7 +309,7 @@ func sendMagicPacket(macAddr string) error {
 	// Create the magic packet.
 	packet := make([]byte, 102)
 	// Add 6 bytes of 0xFF.
-	for i := 0; i < 6; i++ {
+	for i := range 6 {
 		packet[i] = 0xFF
 	}
 	// Repeat the MAC address 16 times.

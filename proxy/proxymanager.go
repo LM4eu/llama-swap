@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -853,11 +854,11 @@ func (pm *ProxyManager) apiKeyAuth() gin.HandlerFunc {
 		var bearerKey string
 		var basicKey string
 		if auth := c.GetHeader("Authorization"); auth != "" {
-			if strings.HasPrefix(auth, "Bearer ") {
-				bearerKey = strings.TrimPrefix(auth, "Bearer ")
-			} else if strings.HasPrefix(auth, "Basic ") {
+			if after, ok := strings.CutPrefix(auth, "Bearer "); ok {
+				bearerKey = after
+			} else if after, ok := strings.CutPrefix(auth, "Basic "); ok {
 				// Basic Auth: base64(username:password), password is the API key
-				encoded := strings.TrimPrefix(auth, "Basic ")
+				encoded := after
 				if decoded, err := base64.StdEncoding.DecodeString(encoded); err == nil {
 					parts := strings.SplitN(string(decoded), ":", 2)
 					if len(parts) == 2 {
@@ -878,13 +879,7 @@ func (pm *ProxyManager) apiKeyAuth() gin.HandlerFunc {
 		}
 
 		// Validate key
-		valid := false
-		for _, key := range pm.config.RequiredAPIKeys {
-			if providedKey == key {
-				valid = true
-				break
-			}
-		}
+		valid := slices.Contains(pm.config.RequiredAPIKeys, providedKey)
 
 		if !valid {
 			c.Header("WWW-Authenticate", `Basic realm="llama-swap"`)

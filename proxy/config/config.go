@@ -85,7 +85,7 @@ var (
 )
 
 // set default values for GroupConfig
-func (c *GroupConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *GroupConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawGroupConfig GroupConfig
 	defaults := rawGroupConfig{
 		Swap:       true,
@@ -480,15 +480,15 @@ func AddDefaultGroupToConfig(config *Config) *Config {
 
 func SanitizeCommand(cmdStr string) ([]string, error) {
 	var cleanedLines []string
-	for _, line := range strings.Split(cmdStr, "\n") {
+	for line := range strings.SplitSeq(cmdStr, "\n") {
 		trimmed := strings.TrimSpace(line)
 		// Skip comment lines
 		if strings.HasPrefix(trimmed, "#") {
 			continue
 		}
 		// Handle trailing backslashes by replacing with space
-		if strings.HasSuffix(trimmed, "\\") {
-			cleanedLines = append(cleanedLines, strings.TrimSuffix(trimmed, "\\")+" ")
+		if before, ok := strings.CutSuffix(trimmed, "\\"); ok {
+			cleanedLines = append(cleanedLines, before+" ")
 		} else {
 			cleanedLines = append(cleanedLines, line)
 		}
@@ -515,7 +515,7 @@ func SanitizeCommand(cmdStr string) ([]string, error) {
 
 func StripComments(cmdStr string) string {
 	var cleanedLines []string
-	for _, line := range strings.Split(cmdStr, "\n") {
+	for line := range strings.SplitSeq(cmdStr, "\n") {
 		trimmed := strings.TrimSpace(line)
 		// Skip comment lines
 		if strings.HasPrefix(trimmed, "#") {

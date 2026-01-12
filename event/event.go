@@ -308,7 +308,7 @@ func (s *group[T]) Count() int {
 
 // String returns string representation of the type
 func (s *group[T]) String() string {
-	typ := reflect.TypeOf(s).String()
+	typ := reflect.TypeFor[*group[T]]().String()
 	idx := strings.LastIndex(typ, "/")
 	typ = typ[idx+1 : len(typ)-1]
 	return typ

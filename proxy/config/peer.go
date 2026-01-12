@@ -13,7 +13,7 @@ type PeerConfig struct {
 	Models   []string `yaml:"models"`
 }
 
-func (c *PeerConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *PeerConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawPeerConfig PeerConfig
 	defaults := rawPeerConfig{
 		Proxy:  "",

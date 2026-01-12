@@ -257,7 +257,7 @@ func BenchmarkLogMonitorWrite(b *testing.B) {
 	b.Run("WithSubscribers", func(b *testing.B) {
 		lm := NewLogMonitorWriter(io.Discard)
 		// Add some subscribers
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			lm.OnLogData(func(data []byte) {})
 		}
 		b.ResetTimer()
@@ -269,7 +269,7 @@ func BenchmarkLogMonitorWrite(b *testing.B) {
 	b.Run("GetHistory", func(b *testing.B) {
 		lm := NewLogMonitorWriter(io.Discard)
 		// Pre-populate with data
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			lm.Write(mediumMsg)
 		}
 		b.ResetTimer()

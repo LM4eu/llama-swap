@@ -73,7 +73,7 @@ func TestProcess_WaitOnMultipleStarts(t *testing.T) {
 	defer process.Stop()
 
 	var wg sync.WaitGroup
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		wg.Add(1)
 		go func(reqID int) {
 			defer wg.Done()
@@ -167,7 +167,7 @@ func TestProcess_LowTTLValue(t *testing.T) {
 	process := NewProcess("ttl", 2, config, debugLogger, debugLogger)
 	defer process.Stop()
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		t.Logf("Waiting before sending request %d", i)
 		time.Sleep(1500 * time.Millisecond)
 

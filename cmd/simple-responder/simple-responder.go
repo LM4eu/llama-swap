@@ -54,7 +54,7 @@ func main() {
 			}
 
 			// Send 10 "asdf" tokens
-			for i := 0; i < 10; i++ {
+			for range 10 {
 				data := gin.H{
 					"created": time.Now().Unix(),
 					"choices": []gin.H{

@@ -40,7 +40,7 @@ type ModelConfig struct {
 	SendLoadingState *bool `yaml:"sendLoadingState"`
 }
 
-func (m *ModelConfig) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (m *ModelConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawModelConfig ModelConfig
 	defaults := rawModelConfig{
 		Cmd:              "",
@@ -79,7 +79,7 @@ type ModelFilters struct {
 	StripParams string `yaml:"stripParams"`
 }
 
-func (m *ModelFilters) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (m *ModelFilters) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawModelFilters ModelFilters
 	defaults := rawModelFilters{
 		StripParams: "",

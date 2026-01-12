@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/LynxAIeu/llama-swap/event"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,13 +39,13 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 	t.Run("increments ID for each metric", func(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
 
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			mm.addMetrics(TokenMetrics{Model: "model"})
 		}
 
 		metrics := mm.getMetrics()
 		assert.Equal(t, 5, len(metrics))
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			assert.Equal(t, i, metrics[i].ID)
 		}
 	})
@@ -54,7 +54,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 3)
 
 		// Add 5 metrics
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			mm.addMetrics(TokenMetrics{
 				Model:       "model",
 				InputTokens: i,
@@ -443,11 +443,11 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 		numGoroutines := 10
 		metricsPerGoroutine := 100
 
-		for i := 0; i < numGoroutines; i++ {
+		for i := range numGoroutines {
 			wg.Add(1)
 			go func(id int) {
 				defer wg.Done()
-				for j := 0; j < metricsPerGoroutine; j++ {
+				for j := range metricsPerGoroutine {
 					mm.addMetrics(TokenMetrics{
 						Model:        "test-model",
 						InputTokens:  id*1000 + j,
@@ -470,7 +470,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 
 		// Writer goroutine
 		go func() {
-			for i := 0; i < 50; i++ {
+			for range 50 {
 				mm.addMetrics(TokenMetrics{Model: "test-model"})
 				time.Sleep(1 * time.Millisecond)
 			}
@@ -479,16 +479,14 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 
 		// Multiple reader goroutines
 		var wg sync.WaitGroup
-		for i := 0; i < 5; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				for j := 0; j < 20; j++ {
+		for range 5 {
+			wg.Go(func() {
+				for range 20 {
 					_ = mm.getMetrics()
 					_, _ = mm.getMetricsJSON()
 					time.Sleep(2 * time.Millisecond)
 				}
-			}()
+			})
 		}
 
 		<-done
@@ -682,8 +680,7 @@ func BenchmarkMetricsMonitor_AddMetrics(b *testing.B) {
 		Timestamp:       time.Now(),
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mm.addMetrics(metric)
 	}
 }
@@ -703,8 +700,7 @@ func BenchmarkMetricsMonitor_AddMetrics_SmallBuffer(b *testing.B) {
 		Timestamp:       time.Now(),
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mm.addMetrics(metric)
 	}
 }

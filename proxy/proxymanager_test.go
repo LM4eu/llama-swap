@@ -191,7 +191,7 @@ func TestProxyManager_SwapMultiProcessParallelRequests(t *testing.T) {
 			}
 
 			mu.Lock()
-			var response map[string]interface{}
+			var response map[string]any
 			assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
 			result, ok := response["responseMessage"].(string)
 			assert.Equal(t, ok, true)
@@ -254,7 +254,7 @@ func TestProxyManager_ListModelsHandler(t *testing.T) {
 
 	// Parse the JSON response
 	var response struct {
-		Data []map[string]interface{} `json:"data"`
+		Data []map[string]any `json:"data"`
 	}
 
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
@@ -305,11 +305,11 @@ func TestProxyManager_ListModelsHandler(t *testing.T) {
 			// Peer models should have meta.llamaswap.peerID
 			meta, exists := model["meta"]
 			assert.True(t, exists, "peer model should have meta field")
-			metaMap, ok := meta.(map[string]interface{})
+			metaMap, ok := meta.(map[string]any)
 			assert.True(t, ok, "meta should be a map")
 			llamaswap, exists := metaMap["llamaswap"]
 			assert.True(t, exists, "meta should have llamaswap field")
-			llamaswapMap, ok := llamaswap.(map[string]interface{})
+			llamaswapMap, ok := llamaswap.(map[string]any)
 			assert.True(t, ok, "llamaswap should be a map")
 			peerID, exists := llamaswapMap["peerID"]
 			assert.True(t, exists, "llamaswap should have peerID field")
@@ -437,7 +437,7 @@ func TestProxyManager_ListModelsHandler_SortedByID(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Data []map[string]interface{} `json:"data"`
+		Data []map[string]any `json:"data"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Failed to parse JSON response: %v", err)
@@ -481,7 +481,7 @@ func TestProxyManager_ListModelsHandler_IncludeAliasesInList(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 
 	var response struct {
-		Data []map[string]interface{} `json:"data"`
+		Data []map[string]any `json:"data"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
 		t.Fatalf("Failed to parse JSON response: %v", err)
@@ -957,7 +957,7 @@ func TestProxyManager_ChatContentLength(t *testing.T) {
 
 	proxy.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-	var response map[string]interface{}
+	var response map[string]any
 	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
 	assert.Equal(t, "81", response["h_content_length"])
 	assert.Equal(t, "model1", response["responseMessage"])
@@ -985,7 +985,7 @@ func TestProxyManager_FiltersStripParams(t *testing.T) {
 
 	proxy.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
-	var response map[string]interface{}
+	var response map[string]any
 	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &response))
 
 	// `temperature` and `stream` are gone but model remains
@@ -1080,7 +1080,7 @@ models:
 	proxy := New(config)
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case <-preloadChan:
 		case <-time.After(5 * time.Second):

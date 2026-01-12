@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/LynxAIeu/llama-swap/event"
+	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 )
 
@@ -347,7 +347,7 @@ func filterAcceptEncoding(acceptEncoding string) string {
 	supported := map[string]bool{"gzip": true, "deflate": true}
 	var filtered []string
 
-	for _, part := range strings.Split(acceptEncoding, ",") {
+	for part := range strings.SplitSeq(acceptEncoding, ",") {
 		// Parse encoding and optional quality value (e.g., "gzip;q=1.0")
 		encoding := strings.TrimSpace(strings.Split(part, ";")[0])
 		if supported[strings.ToLower(encoding)] {
