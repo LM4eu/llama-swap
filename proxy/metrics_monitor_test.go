@@ -408,7 +408,7 @@ func TestMetricsMonitor_ResponseBodyCopier(t *testing.T) {
 
 		assert.True(t, copier.StartTime().IsZero())
 
-		copier.Write([]byte("test"))
+		copier.WriteString("test")
 
 		assert.False(t, copier.StartTime().IsZero())
 	})
