@@ -8,9 +8,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/LynxAIeu/llama-swap/proxy/config"
-	"go.yaml.in/yaml/v4"
+	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-yaml"
 )
 
 var (

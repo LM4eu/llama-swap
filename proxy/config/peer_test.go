@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"go.yaml.in/yaml/v4"
+	"github.com/goccy/go-yaml"
 )
 
 func TestPeerConfig_UnmarshalYAML(t *testing.T) {

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/billziss-gh/golib/shlex"
-	"go.yaml.in/yaml/v4"
+	"github.com/goccy/go-yaml"
 )
 
 const DEFAULT_GROUP_ID = "(default)"
@@ -29,29 +29,24 @@ type MacroEntry struct {
 
 type MacroList []MacroEntry
 
-// UnmarshalYAML implements custom YAML unmarshaling that preserves macro definition order
-func (ml *MacroList) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind != yaml.MappingNode {
-		return fmt.Errorf("macros must be a mapping")
+// UnmarshalYAML implements custom YAML unmarshaling that preserves macro definition order.
+func (ml *MacroList) UnmarshalYAML(value []byte) error {
+	// Parse the YAML into a yaml.MapSlice to preserve order
+	var mapSlice yaml.MapSlice
+	err := yaml.Unmarshal(value, &mapSlice)
+	if err != nil {
+		return err
 	}
 
-	// yaml.Node.Content for a mapping contains alternating key/value nodes
-	entries := make([]MacroEntry, 0, len(value.Content)/2)
-	for i := 0; i < len(value.Content); i += 2 {
-		keyNode := value.Content[i]
-		valueNode := value.Content[i+1]
-
-		var name string
-		if err := keyNode.Decode(&name); err != nil {
-			return fmt.Errorf("failed to decode macro name: %w", err)
+	// Convert the MapSlice to MacroList
+	entries := make([]MacroEntry, 0, len(mapSlice))
+	for _, item := range mapSlice {
+		name, ok := item.Key.(string)
+		if !ok {
+			return fmt.Errorf("macro name is not a string: %s", name)
 		}
 
-		var val any
-		if err := valueNode.Decode(&val); err != nil {
-			return fmt.Errorf("failed to decode macro value for '%s': %w", name, err)
-		}
-
-		entries = append(entries, MacroEntry{Name: name, Value: val})
+		entries = append(entries, MacroEntry{Name: name, Value: item.Value})
 	}
 
 	*ml = entries
@@ -116,15 +111,15 @@ type HookOnStartup struct {
 }
 
 type Config struct {
-	HealthCheckTimeout int                    `yaml:"healthCheckTimeout"`
-	LogRequests        bool                   `yaml:"logRequests"`
-	LogLevel           string                 `yaml:"logLevel"`
-	LogTimeFormat      string                 `yaml:"logTimeFormat"`
-	LogToStdout        string                 `yaml:"logToStdout"`
-	MetricsMaxInMemory int                    `yaml:"metricsMaxInMemory"`
+	HealthCheckTimeout int                     `yaml:"healthCheckTimeout"`
+	LogRequests        bool                    `yaml:"logRequests"`
+	LogLevel           string                  `yaml:"logLevel"`
+	LogTimeFormat      string                  `yaml:"logTimeFormat"`
+	LogToStdout        string                  `yaml:"logToStdout"`
+	MetricsMaxInMemory int                     `yaml:"metricsMaxInMemory"`
 	Models             map[string]*ModelConfig `yaml:"models"` /* key is model ID */
-	Profiles           map[string][]string    `yaml:"profiles"`
-	Groups             map[string]GroupConfig `yaml:"groups"` /* key is group ID */
+	Profiles           map[string][]string     `yaml:"profiles"`
+	Groups             map[string]GroupConfig  `yaml:"groups"` /* key is group ID */
 
 	// for key/value replacements in model's cmd, cmdStop, proxy, checkEndPoint
 	Macros MacroList `yaml:"macros"`
@@ -650,4 +645,3 @@ func substituteMacroInValue(value any, macroName string, macroValue any) (any, e
 func (ml MacroList) MarshalYAML() (any, error) {
 	return ml.ToMap(), nil
 }
-
