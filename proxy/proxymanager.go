@@ -737,16 +737,15 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 	// Copy all form values
 	for key, values := range c.Request.MultipartForm.Value {
 		for _, value := range values {
-			fieldValue := value
 			// If this is the model field and we have a profile, use just the model name
 			if key == "model" {
 				// # issue #69 allow custom model names to be sent to upstream
 				useModelName := pm.config.Models[modelID].UseModelName
 
 				if useModelName != "" {
-					fieldValue = useModelName
+					value = useModelName
 				} else {
-					fieldValue = requestedModel
+					value = requestedModel
 				}
 			}
 			field, err := multipartWriter.CreateFormField(key)
@@ -754,7 +753,7 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 				pm.sendErrorResponse(c, http.StatusInternalServerError, "error recreating form field")
 				return
 			}
-			if _, err = field.Write([]byte(fieldValue)); err != nil {
+			if _, err = field.Write([]byte(value)); err != nil {
 				pm.sendErrorResponse(c, http.StatusInternalServerError, "error writing form field")
 				return
 			}
