@@ -65,7 +65,7 @@ type Process struct {
 	inFlightRequestsCount     atomic.Int32
 }
 
-func NewProcess(ID string, healthCheckTimeout int, config *config.ModelConfig, processLogger *LogMonitor, proxyLogger *LogMonitor) *Process {
+func NewProcess(id string, healthCheckTimeout int, config *config.ModelConfig, processLogger, proxyLogger *LogMonitor) *Process {
 	concurrentLimit := 10
 	if config.ConcurrencyLimit > 0 {
 		concurrentLimit = config.ConcurrencyLimit
@@ -74,7 +74,7 @@ func NewProcess(ID string, healthCheckTimeout int, config *config.ModelConfig, p
 	// Setup the reverse proxy.
 	proxyURL, err := url.Parse(config.Proxy)
 	if err != nil {
-		proxyLogger.Errorf("<%s> invalid proxy URL %q: %v", ID, config.Proxy, err)
+		proxyLogger.Errorf("<%s> invalid proxy URL %q: %v", id, config.Proxy, err)
 	}
 
 	var reverseProxy *httputil.ReverseProxy
@@ -90,7 +90,7 @@ func NewProcess(ID string, healthCheckTimeout int, config *config.ModelConfig, p
 	}
 
 	return &Process{
-		ID:                      ID,
+		ID:                      id,
 		config:                  config,
 		cmd:                     nil,
 		reverseProxy:            reverseProxy,
