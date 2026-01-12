@@ -111,7 +111,7 @@ func TestProxyRequest_ModelNotFound(t *testing.T) {
 	pm, err := NewPeerProxy(peers, testLogger)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 	w := httptest.NewRecorder()
 
 	err = pm.ProxyRequest("non-existing-model", w, req)
@@ -139,7 +139,7 @@ func TestProxyRequest_Success(t *testing.T) {
 	pm, err := NewPeerProxy(peers, testLogger)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 	w := httptest.NewRecorder()
 
 	err = pm.ProxyRequest("test-model", w, req)
@@ -170,7 +170,7 @@ func TestProxyRequest_ApiKeyInjection(t *testing.T) {
 	pm, err := NewPeerProxy(peers, testLogger)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 	w := httptest.NewRecorder()
 
 	err = pm.ProxyRequest("test-model", w, req)
@@ -200,7 +200,7 @@ func TestProxyRequest_NoApiKey(t *testing.T) {
 	pm, err := NewPeerProxy(peers, testLogger)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 	w := httptest.NewRecorder()
 
 	err = pm.ProxyRequest("test-model", w, req)
@@ -229,7 +229,7 @@ func TestProxyRequest_HostHeaderSet(t *testing.T) {
 	pm, err := NewPeerProxy(peers, testLogger)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 	w := httptest.NewRecorder()
 
 	err = pm.ProxyRequest("test-model", w, req)
@@ -258,7 +258,7 @@ func TestProxyRequest_SSEHeaderModification(t *testing.T) {
 	pm, err := NewPeerProxy(peers, testLogger)
 	require.NoError(t, err)
 
-	req := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
 	w := httptest.NewRecorder()
 
 	err = pm.ProxyRequest("test-model", w, req)

@@ -29,7 +29,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		mm.addMetrics(metric)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, 0, metrics[0].ID)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 100, metrics[0].InputTokens)
@@ -44,7 +44,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		}
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 5, len(metrics))
+		assert.Len(t, metrics, 5)
 		for i := range 5 {
 			assert.Equal(t, i, metrics[i].ID)
 		}
@@ -62,7 +62,7 @@ func TestMetricsMonitor_AddMetrics(t *testing.T) {
 		}
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 3, len(metrics))
+		assert.Len(t, metrics, 3)
 
 		// Should keep the last 3 metrics (IDs 2, 3, 4)
 		assert.Equal(t, 2, metrics[0].ID)
@@ -104,7 +104,7 @@ func TestMetricsMonitor_GetMetrics(t *testing.T) {
 		mm := newMetricsMonitor(testLogger, 10)
 		metrics := mm.getMetrics()
 		assert.NotNil(t, metrics)
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("returns copy of metrics", func(t *testing.T) {
@@ -116,8 +116,8 @@ func TestMetricsMonitor_GetMetrics(t *testing.T) {
 		metrics2 := mm.getMetrics()
 
 		// Verify we got copies
-		assert.Equal(t, 2, len(metrics1))
-		assert.Equal(t, 2, len(metrics2))
+		assert.Len(t, metrics1, 2)
+		assert.Len(t, metrics2, 2)
 
 		// Modify the returned slice shouldn't affect the original
 		metrics1[0].Model = "modified"
@@ -136,7 +136,7 @@ func TestMetricsMonitor_GetMetricsJSON(t *testing.T) {
 		var metrics []TokenMetrics
 		err = json.Unmarshal(jsonData, &metrics)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("returns valid JSON with metrics", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestMetricsMonitor_GetMetricsJSON(t *testing.T) {
 		var metrics []TokenMetrics
 		err = json.Unmarshal(jsonData, &metrics)
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(metrics))
+		assert.Len(t, metrics, 2)
 		assert.Equal(t, "model1", metrics[0].Model)
 		assert.Equal(t, "model2", metrics[1].Model)
 	})
@@ -184,7 +184,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -192,7 +192,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
@@ -220,7 +220,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -228,7 +228,7 @@ func TestMetricsMonitor_WrapHandler(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
@@ -259,7 +259,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -267,7 +267,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		// When timings data is present, it takes precedence
 		assert.Equal(t, 10, metrics[0].InputTokens)
@@ -283,7 +283,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -291,7 +291,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("empty response body records minimal metrics", func(t *testing.T) {
@@ -302,7 +302,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -310,7 +310,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 0, metrics[0].InputTokens)
 		assert.Equal(t, 0, metrics[0].OutputTokens)
@@ -326,7 +326,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -334,7 +334,7 @@ data: [DONE]
 		assert.NoError(t, err) // Errors after response is sent are logged, not returned
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 0, metrics[0].InputTokens)
 		assert.Equal(t, 0, metrics[0].OutputTokens)
@@ -348,7 +348,7 @@ data: [DONE]
 			return expectedErr
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -356,7 +356,7 @@ data: [DONE]
 		assert.Equal(t, expectedErr, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 0, len(metrics))
+		assert.Empty(t, metrics)
 	})
 
 	t.Run("response without usage or timings records minimal metrics", func(t *testing.T) {
@@ -371,7 +371,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -379,7 +379,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 0, metrics[0].InputTokens)
 		assert.Equal(t, 0, metrics[0].OutputTokens)
@@ -460,7 +460,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 		wg.Wait()
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, numGoroutines*metricsPerGoroutine, len(metrics))
+		assert.Len(t, metrics, numGoroutines*metricsPerGoroutine)
 	})
 
 	t.Run("concurrent reads and writes are safe", func(t *testing.T) {
@@ -494,7 +494,7 @@ func TestMetricsMonitor_Concurrent(t *testing.T) {
 
 		// Final check
 		metrics := mm.getMetrics()
-		assert.Equal(t, 50, len(metrics))
+		assert.Len(t, metrics, 50)
 	})
 }
 
@@ -525,7 +525,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -533,7 +533,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		// Should use timings values, not usage values
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
@@ -560,7 +560,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -568,7 +568,7 @@ func TestMetricsMonitor_ParseMetrics(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, -1, metrics[0].CachedTokens) // Default value when not present
 	})
 }
@@ -595,7 +595,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -603,7 +603,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
 	})
@@ -624,7 +624,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -632,7 +632,7 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 0, metrics[0].InputTokens)
 		assert.Equal(t, 0, metrics[0].OutputTokens)
@@ -650,7 +650,7 @@ data: [DONE]
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -658,14 +658,14 @@ data: [DONE]
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 0, metrics[0].InputTokens)
 		assert.Equal(t, 0, metrics[0].OutputTokens)
 	})
 }
 
-// Benchmark tests
+// Benchmark tests.
 func BenchmarkMetricsMonitor_AddMetrics(b *testing.B) {
 	mm := newMetricsMonitor(testLogger, 1000)
 
@@ -726,7 +726,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -734,7 +734,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 100, metrics[0].InputTokens)
 		assert.Equal(t, 50, metrics[0].OutputTokens)
@@ -760,7 +760,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -768,7 +768,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 200, metrics[0].InputTokens)
 		assert.Equal(t, 75, metrics[0].OutputTokens)
@@ -788,7 +788,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -796,7 +796,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 		assert.NoError(t, err) // Should not return error, just log warning
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, "test-model", metrics[0].Model)
 		assert.Equal(t, 0, metrics[0].InputTokens)
 		assert.Equal(t, 0, metrics[0].OutputTokens)
@@ -815,7 +815,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 			return nil
 		}
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest(http.MethodPost, "/test", nil)
 		rec := httptest.NewRecorder()
 		ginCtx, _ := gin.CreateTestContext(rec)
 
@@ -823,7 +823,7 @@ func TestMetricsMonitor_WrapHandler_Compression(t *testing.T) {
 		assert.NoError(t, err)
 
 		metrics := mm.getMetrics()
-		assert.Equal(t, 1, len(metrics))
+		assert.Len(t, metrics, 1)
 		assert.Equal(t, 300, metrics[0].InputTokens)
 		assert.Equal(t, 100, metrics[0].OutputTokens)
 	})

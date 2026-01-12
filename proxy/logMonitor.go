@@ -102,20 +102,14 @@ const (
 )
 
 type LogMonitor struct {
-	eventbus *event.Dispatcher
-	mu       sync.RWMutex
-	buffer   *circularBuffer
-	bufferMu sync.RWMutex
-
-	// typically this can be os.Stdout
-	stdout io.Writer
-
-	// logging levels
-	level  LogLevel
-	prefix string
-
-	// timestamps
+	stdout     io.Writer
+	eventbus   *event.Dispatcher
+	buffer     *circularBuffer
+	prefix     string
 	timeFormat string
+	level      LogLevel
+	mu         sync.RWMutex
+	bufferMu   sync.RWMutex
 }
 
 func NewLogMonitor() *LogMonitor {
@@ -202,14 +196,14 @@ func (w *LogMonitor) SetLogTimeFormat(timeFormat string) {
 	w.timeFormat = timeFormat
 }
 
-func (w *LogMonitor) formatMessage(level string, msg string) []byte {
+func (w *LogMonitor) formatMessage(level, msg string) []byte {
 	prefix := ""
 	if w.prefix != "" {
 		prefix = fmt.Sprintf("[%s] ", w.prefix)
 	}
 	timestamp := ""
 	if w.timeFormat != "" {
-		timestamp = fmt.Sprintf("%s ", time.Now().Format(w.timeFormat))
+		timestamp = time.Now().Format(w.timeFormat) + " "
 	}
 	return fmt.Appendf(nil, "%s%s[%s] %s\n", timestamp, prefix, level, msg)
 }

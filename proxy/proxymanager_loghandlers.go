@@ -2,7 +2,7 @@ package proxy
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -40,7 +40,7 @@ func (pm *ProxyManager) StreamLogsHandler(c *gin.Context) {
 
 	flusher, ok := c.Writer.(http.Flusher)
 	if !ok {
-		c.AbortWithError(http.StatusInternalServerError, fmt.Errorf("streaming unsupported"))
+		c.AbortWithError(http.StatusInternalServerError, errors.New("streaming unsupported"))
 		return
 	}
 
@@ -81,7 +81,7 @@ func (pm *ProxyManager) StreamLogsHandler(c *gin.Context) {
 	}
 }
 
-// getLogger searches for the appropriate logger based on the logMonitorId
+// getLogger searches for the appropriate logger based on the logMonitorId.
 func (pm *ProxyManager) getLogger(logMonitorId string) (*LogMonitor, error) {
 	switch logMonitorId {
 	case "":
@@ -102,6 +102,6 @@ func (pm *ProxyManager) getLogger(logMonitorId string) (*LogMonitor, error) {
 			}
 		}
 
-		return nil, fmt.Errorf("invalid logger. Use 'proxy', 'upstream' or a model's ID")
+		return nil, errors.New("invalid logger. Use 'proxy', 'upstream' or a model's ID")
 	}
 }

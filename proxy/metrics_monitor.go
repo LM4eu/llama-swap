@@ -5,7 +5,7 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -17,11 +17,11 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-// TokenMetrics represents parsed token statistics from llama-server logs
+// TokenMetrics represents parsed token statistics from llama-server logs.
 type TokenMetrics struct {
-	ID              int       `json:"id"`
 	Timestamp       time.Time `json:"timestamp"`
 	Model           string    `json:"model"`
+	ID              int       `json:"id"`
 	CachedTokens    int       `json:"cache_tokens"`
 	InputTokens     int       `json:"input_tokens"`
 	OutputTokens    int       `json:"output_tokens"`
@@ -30,7 +30,7 @@ type TokenMetrics struct {
 	DurationMs      int       `json:"duration_ms"`
 }
 
-// TokenMetricsEvent represents a token metrics event
+// TokenMetricsEvent represents a token metrics event.
 type TokenMetricsEvent struct {
 	Metrics TokenMetrics
 }
@@ -39,13 +39,13 @@ func (e TokenMetricsEvent) Type() uint32 {
 	return TokenMetricsEventID // defined in events.go
 }
 
-// metricsMonitor parses llama-server output for token statistics
+// metricsMonitor parses llama-server output for token statistics.
 type metricsMonitor struct {
-	mu         sync.RWMutex
+	logger     *LogMonitor
 	metrics    []TokenMetrics
 	maxMetrics int
 	nextID     int
-	logger     *LogMonitor
+	mu         sync.RWMutex
 }
 
 func newMetricsMonitor(logger *LogMonitor, maxMetrics int) *metricsMonitor {
@@ -57,7 +57,7 @@ func newMetricsMonitor(logger *LogMonitor, maxMetrics int) *metricsMonitor {
 	return mp
 }
 
-// addMetrics adds a new metric to the collection and publishes an event
+// addMetrics adds a new metric to the collection and publishes an event.
 func (mp *metricsMonitor) addMetrics(metric TokenMetrics) {
 	mp.mu.Lock()
 	defer mp.mu.Unlock()
@@ -71,7 +71,7 @@ func (mp *metricsMonitor) addMetrics(metric TokenMetrics) {
 	event.Emit(TokenMetricsEvent{Metrics: metric})
 }
 
-// getMetrics returns a copy of the current metrics
+// getMetrics returns a copy of the current metrics.
 func (mp *metricsMonitor) getMetrics() []TokenMetrics {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -81,7 +81,7 @@ func (mp *metricsMonitor) getMetrics() []TokenMetrics {
 	return result
 }
 
-// getMetricsJSON returns metrics as JSON
+// getMetricsJSON returns metrics as JSON.
 func (mp *metricsMonitor) getMetricsJSON() ([]byte, error) {
 	mp.mu.RLock()
 	defer mp.mu.RUnlock()
@@ -90,7 +90,7 @@ func (mp *metricsMonitor) getMetricsJSON() ([]byte, error) {
 
 // wrapHandler wraps the proxy handler to extract token metrics
 // if wrapHandler returns an error it is safe to assume that no
-// data was sent to the client
+// data was sent to the client.
 func (mp *metricsMonitor) wrapHandler(
 	modelID string,
 	writer gin.ResponseWriter,
@@ -104,7 +104,8 @@ func (mp *metricsMonitor) wrapHandler(
 		request.Header.Set("Accept-Encoding", filterAcceptEncoding(ae))
 	}
 
-	if err := next(modelID, recorder, request); err != nil {
+	err := next(modelID, recorder, request)
+	if err != nil {
 		return err
 	}
 
@@ -218,7 +219,7 @@ func processStreamingResponse(modelID string, start time.Time, body []byte) (Tok
 		}
 	}
 
-	return TokenMetrics{}, fmt.Errorf("no valid JSON data found in stream")
+	return TokenMetrics{}, errors.New("no valid JSON data found in stream")
 }
 
 func parseMetrics(modelID string, start time.Time, usage, timings gjson.Result) (TokenMetrics, error) {
@@ -278,7 +279,7 @@ func parseMetrics(modelID string, start time.Time, usage, timings gjson.Result) 
 	}, nil
 }
 
-// decompressBody decompresses the body based on Content-Encoding header
+// decompressBody decompresses the body based on Content-Encoding header.
 func decompressBody(body []byte, encoding string) ([]byte, error) {
 	switch strings.ToLower(strings.TrimSpace(encoding)) {
 	case "gzip":
@@ -298,7 +299,7 @@ func decompressBody(body []byte, encoding string) ([]byte, error) {
 }
 
 // responseBodyCopier records the response body and writes to the original response writer
-// while also capturing it in a buffer for later processing
+// while also capturing it in a buffer for later processing.
 type responseBodyCopier struct {
 	gin.ResponseWriter
 	body  *bytes.Buffer

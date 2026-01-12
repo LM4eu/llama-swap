@@ -1,17 +1,20 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 )
 
-type PeerDictionaryConfig map[string]PeerConfig
-type PeerConfig struct {
-	Proxy    string   `yaml:"proxy"`
-	ProxyURL *url.URL `yaml:"-"`
-	ApiKey   string   `yaml:"apiKey"`
-	Models   []string `yaml:"models"`
-}
+type (
+	PeerDictionaryConfig map[string]PeerConfig
+	PeerConfig           struct {
+		Proxy    string   `yaml:"proxy"`
+		ProxyURL *url.URL `yaml:"-"`
+		ApiKey   string   `yaml:"apiKey"`
+		Models   []string `yaml:"models"`
+	}
+)
 
 func (c *PeerConfig) UnmarshalYAML(unmarshal func(any) error) error {
 	type rawPeerConfig PeerConfig
@@ -27,7 +30,7 @@ func (c *PeerConfig) UnmarshalYAML(unmarshal func(any) error) error {
 
 	// Validate proxy is not empty
 	if defaults.Proxy == "" {
-		return fmt.Errorf("proxy is required")
+		return errors.New("proxy is required")
 	}
 
 	// Validate proxy is a valid URL and store the parsed value
@@ -39,7 +42,7 @@ func (c *PeerConfig) UnmarshalYAML(unmarshal func(any) error) error {
 
 	// Validate models is not empty
 	if len(defaults.Models) == 0 {
-		return fmt.Errorf("peer models can not be empty")
+		return errors.New("peer models can not be empty")
 	}
 
 	*c = PeerConfig(defaults)

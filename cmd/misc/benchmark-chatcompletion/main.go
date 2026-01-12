@@ -62,7 +62,7 @@ func main() {
 
 	// Goroutine to fill the request queue
 	go func() {
-		for i := 0; i < totalRequests; i++ {
+		for i := range totalRequests {
 			requests <- i + 1
 		}
 		close(requests)
@@ -70,7 +70,7 @@ func main() {
 
 	// ----- Worker pool -------------------------------------------------------
 	var wg sync.WaitGroup
-	for i := 0; i < parallelization; i++ {
+	for i := range parallelization {
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
@@ -81,7 +81,7 @@ func main() {
 
 				// Send POST request
 				req, err := http.NewRequest(http.MethodPost,
-					fmt.Sprintf("%s/chat/completions", baseurl),
+					baseurl+"/chat/completions",
 					bytes.NewReader([]byte(payload)))
 				if err != nil {
 					log.Printf("[worker %d][req %d] request creation error: %v", workerID, reqID, err)

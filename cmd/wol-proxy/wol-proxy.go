@@ -92,7 +92,8 @@ func main() {
 	// start the server
 	go func() {
 		slog.Info("server starting on", "address", *flagListen)
-		if err := server.ListenAndServe(); err != nil {
+		err := server.ListenAndServe()
+		if err != nil {
 			slog.Error("error starting server", "error", err)
 		}
 	}()
@@ -112,9 +113,9 @@ const (
 
 type proxyServer struct {
 	upstreamProxy *httputil.ReverseProxy
+	status        upstreamStatus
 	failCount     int
 	statusMutex   sync.RWMutex
-	status        upstreamStatus
 }
 
 func newProxy(url *url.URL) *proxyServer {
@@ -137,7 +138,7 @@ func newProxy(url *url.URL) *proxyServer {
 		for {
 			slog.Debug("connecting to SSE endpoint", "url", eventsUrl)
 
-			req, err := http.NewRequest("GET", eventsUrl, nil)
+			req, err := http.NewRequest(http.MethodGet, eventsUrl, nil)
 			if err != nil {
 				slog.Warn("failed to create SSE request", "error", err)
 				proxy.setStatus(notready)
@@ -212,11 +213,11 @@ func newProxy(url *url.URL) *proxyServer {
 }
 
 func (p *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" && r.URL.Path == "/status" {
+	if r.Method == http.MethodGet && r.URL.Path == "/status" {
 		status := string(p.getStatus())
 		failCount := p.getFailures()
 		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "status: %s\n", status)
 		fmt.Fprintf(w, "failures: %d\n", failCount)
 		return
@@ -231,7 +232,8 @@ func (p *proxyServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		slog.Info("upstream not ready, sending magic packet", "req", path, "from", r.RemoteAddr)
-		if err := sendMagicPacket(*flagMac); err != nil {
+		err := sendMagicPacket(*flagMac)
+		if err != nil {
 			slog.Warn("failed to send magic WoL packet", "error", err)
 		}
 

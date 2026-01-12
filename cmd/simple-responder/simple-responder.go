@@ -150,7 +150,6 @@ func main() {
 				"total_tokens":      35,
 			},
 		})
-
 	})
 
 	// llama-server compatibility: /completion
@@ -232,7 +231,7 @@ func main() {
 
 		c.Header("Content-Type", "text/plain")
 		for _, char := range echo {
-			c.Writer.Write([]byte(string(char)))
+			c.Writer.WriteString(string(char))
 			c.Writer.Flush()
 
 			// wait
@@ -290,7 +289,8 @@ func main() {
 	go func() {
 		log.Printf("simple-responder listening on %s\n", address)
 		// service connections
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		err := srv.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatalf("simple-responder err: %s\n", err)
 		}
 	}()

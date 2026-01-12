@@ -233,7 +233,7 @@ func BenchmarkLogMonitorWrite(b *testing.B) {
 	b.Run("SmallWrite", func(b *testing.B) {
 		lm := NewLogMonitorWriter(io.Discard)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			lm.Write(smallMsg)
 		}
 	})
@@ -241,7 +241,7 @@ func BenchmarkLogMonitorWrite(b *testing.B) {
 	b.Run("MediumWrite", func(b *testing.B) {
 		lm := NewLogMonitorWriter(io.Discard)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			lm.Write(mediumMsg)
 		}
 	})
@@ -249,7 +249,7 @@ func BenchmarkLogMonitorWrite(b *testing.B) {
 	b.Run("LargeWrite", func(b *testing.B) {
 		lm := NewLogMonitorWriter(io.Discard)
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			lm.Write(largeMsg)
 		}
 	})
@@ -261,7 +261,7 @@ func BenchmarkLogMonitorWrite(b *testing.B) {
 			lm.OnLogData(func(data []byte) {})
 		}
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			lm.Write(mediumMsg)
 		}
 	})
@@ -273,7 +273,7 @@ func BenchmarkLogMonitorWrite(b *testing.B) {
 			lm.Write(mediumMsg)
 		}
 		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for range b.N {
 			lm.GetHistory()
 		}
 	})

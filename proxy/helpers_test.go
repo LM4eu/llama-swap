@@ -20,7 +20,7 @@ var (
 	simpleResponderPath = getSimpleResponderPath()
 )
 
-// Check if the binary exists
+// Check if the binary exists.
 func TestMain(m *testing.M) {
 	binaryPath := getSimpleResponderPath()
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 
-// Helper function to get the binary path
+// Helper function to get the binary path.
 func getSimpleResponderPath() string {
 	goos := runtime.GOOS
 	goarch := runtime.GOARCH
@@ -78,7 +78,8 @@ proxy: "http://127.0.0.1:%d"
 `, simpleResponderPath, port, expectedMessage, port)
 
 	var cfg config.ModelConfig
-	if err := yaml.Unmarshal([]byte(yamlStr), &cfg); err != nil {
+	err := yaml.Unmarshal([]byte(yamlStr), &cfg)
+	if err != nil {
 		panic(fmt.Sprintf("failed to unmarshal test config: %v in [%s]", err, yamlStr))
 	}
 

@@ -31,16 +31,15 @@ Test how exec.Cmd.CommandContext behaves under certain conditions:*
     ✔︎ waits for child process to exit, then exits gracefully.
 */
 func main() {
-
 	// swap between these to use kill -9 <pid> on the cli to sim external crash
 	ctx, cancel := context.WithCancel(context.Background())
-	//ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
+	// ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
 	defer cancel()
 
-	//cmd := exec.CommandContext(ctx, "sleep", "1")
+	// cmd := exec.CommandContext(ctx, "sleep", "1")
 	cmd := exec.CommandContext(ctx,
 		"../../build/simple-responder_darwin_arm64",
-		//"-ignore-sig-term", /* so it doesn't exit on receiving SIGTERM, test cmd.WaitTimeout */
+		// "-ignore-sig-term", /* so it doesn't exit on receiving SIGTERM, test cmd.WaitTimeout */
 	)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -52,7 +51,7 @@ func main() {
 		fmt.Println("✔︎ Cancel() called, sending SIGTERM")
 		cmd.Process.Signal(syscall.SIGTERM)
 
-		//return nil
+		// return nil
 
 		// this error is returned by cmd.Wait(), and can be used to
 		// single an error when the process couldn't be normally terminated
@@ -65,7 +64,8 @@ func main() {
 		return errors.New("error from cmd.Cancel()") // sets error returned by cmd.Wait()
 	}
 
-	if err := cmd.Start(); err != nil {
+	err := cmd.Start()
+	if err != nil {
 		fmt.Println("Error starting process:", err)
 		return
 	}
@@ -82,7 +82,8 @@ func main() {
 
 	fmt.Printf("✔︎ Parent Pid: %d, Process Pid: %d\n", os.Getpid(), cmd.Process.Pid)
 	fmt.Println("✔︎ Process started, cmd.Wait() ... ")
-	if err := cmd.Wait(); err != nil {
+	err = cmd.Wait()
+	if err != nil {
 		fmt.Println("✔︎ cmd.Wait returned, Error:", err)
 	} else {
 		fmt.Println("✔︎ cmd.Wait returned, Process exited on its own")

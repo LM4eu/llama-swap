@@ -30,31 +30,20 @@ const (
 type proxyCtxKey string
 
 type ProxyManager struct {
-	sync.Mutex
-
-	config    *config.Config
-	ginEngine *gin.Engine
-
-	// logging
+	shutdownCtx    context.Context
+	metricsMonitor *metricsMonitor
+	ginEngine      *gin.Engine
 	proxyLogger    *LogMonitor
 	upstreamLogger *LogMonitor
 	muxLogger      *LogMonitor
-
-	metricsMonitor *metricsMonitor
-
-	processGroups map[string]*ProcessGroup
-
-	// shutdown signaling
-	shutdownCtx    context.Context
+	processGroups  map[string]*ProcessGroup
+	config         *config.Config
 	shutdownCancel context.CancelFunc
-
-	// version info
-	buildDate string
-	commit    string
-	version   string
-
-	// peer proxy see: #296, #433
-	peerProxy *PeerProxy
+	peerProxy      *PeerProxy
+	buildDate      string
+	commit         string
+	version        string
+	sync.Mutex
 }
 
 func New(proxyConfig *config.Config) *ProxyManager {
@@ -198,7 +187,7 @@ func New(proxyConfig *config.Config) *ProxyManager {
 					proxyLogger.Errorf("Failed to preload model %s: %v", modelID, err)
 					continue
 				} else {
-					req, _ := http.NewRequest("GET", "/", nil)
+					req, _ := http.NewRequest(http.MethodGet, "/", nil)
 					processGroup.ProxyRequest(modelID, discardWriter, req)
 					event.Emit(ModelPreloadedEvent{
 						ModelName: modelID,
@@ -213,9 +202,7 @@ func New(proxyConfig *config.Config) *ProxyManager {
 }
 
 func (pm *ProxyManager) setupGinEngine() {
-
 	pm.ginEngine.Use(func(c *gin.Context) {
-
 		// don't log the Wake on Lan proxy health check
 		if c.Request.URL.Path == "/wol-health" {
 			c.Next()
@@ -254,7 +241,7 @@ func (pm *ProxyManager) setupGinEngine() {
 	// see: issue: #81, #77 and #42 for CORS issues
 	// respond with permissive OPTIONS for any endpoint
 	pm.ginEngine.Use(func(c *gin.Context) {
-		if c.Request.Method == "OPTIONS" {
+		if c.Request.Method == http.MethodOptions {
 			c.Header("Access-Control-Allow-Origin", "*")
 			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 
@@ -349,7 +336,6 @@ func (pm *ProxyManager) setupGinEngine() {
 	if err != nil {
 		pm.proxyLogger.Errorf("Failed to load React filesystem: %v", err)
 	} else {
-
 		// serve files that exist under /ui/*
 		pm.ginEngine.StaticFS("/ui", reactFS)
 
@@ -367,7 +353,6 @@ func (pm *ProxyManager) setupGinEngine() {
 			}
 			defer file.Close()
 			http.ServeContent(c.Writer, c.Request, "index.html", time.Now(), file)
-
 		})
 	}
 
@@ -379,7 +364,7 @@ func (pm *ProxyManager) setupGinEngine() {
 	gin.DisableConsoleColor()
 }
 
-// ServeHTTP implements http.Handler interface
+// ServeHTTP implements http.Handler interface.
 func (pm *ProxyManager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	pm.ginEngine.ServeHTTP(w, r)
 }
@@ -405,7 +390,7 @@ func (pm *ProxyManager) StopProcesses(strategy StopStrategy) {
 	wg.Wait()
 }
 
-// Shutdown stops all processes managed by this ProxyManager
+// Shutdown stops all processes managed by this ProxyManager.
 func (pm *ProxyManager) Shutdown() {
 	pm.Lock()
 	defer pm.Unlock()
@@ -527,8 +512,8 @@ func (pm *ProxyManager) ListModelsHandler(c *gin.Context) {
 // findModelInPath searches for a valid model name in a path with slashes.
 // It iteratively builds up path segments until it finds a matching model.
 // Returns: (searchModelName, realModelName, remainingPath, found)
-// Example: "/author/model/endpoint" with model "author/model" -> ("author/model", "author/model", "/endpoint", true)
-func (pm *ProxyManager) findModelInPath(path string) (searchName string, realName string, remainingPath string, found bool) {
+// Example: "/author/model/endpoint" with model "author/model" -> ("author/model", "author/model", "/endpoint", true).
+func (pm *ProxyManager) findModelInPath(path string) (searchName, realName, remainingPath string, found bool) {
 	parts := strings.Split(strings.TrimSpace(path), "/")
 	searchModelName := ""
 
@@ -580,7 +565,7 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 
 	processGroup, err := pm.swapProcessGroup(modelID)
 	if err != nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error swapping process group: %s", err.Error()))
+		pm.sendErrorResponse(c, http.StatusInternalServerError, "error swapping process group: "+err.Error())
 		return
 	}
 
@@ -589,15 +574,17 @@ func (pm *ProxyManager) proxyToUpstream(c *gin.Context) {
 	c.Request.URL.Path = remainingPath
 
 	// attempt to record metrics if it is a POST request
-	if pm.metricsMonitor != nil && c.Request.Method == "POST" {
-		if err := pm.metricsMonitor.wrapHandler(modelID, c.Writer, c.Request, processGroup.ProxyRequest); err != nil {
-			pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error proxying metrics wrapped request: %s", err.Error()))
+	if pm.metricsMonitor != nil && c.Request.Method == http.MethodPost {
+		err := pm.metricsMonitor.wrapHandler(modelID, c.Writer, c.Request, processGroup.ProxyRequest)
+		if err != nil {
+			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying metrics wrapped request: "+err.Error())
 			pm.proxyLogger.Errorf("Error proxying wrapped upstream request for model %s, path=%s", modelID, originalPath)
 			return
 		}
 	} else {
-		if err := processGroup.ProxyRequest(modelID, c.Writer, c.Request); err != nil {
-			pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error proxying request: %s", err.Error()))
+		err := processGroup.ProxyRequest(modelID, c.Writer, c.Request)
+		if err != nil {
+			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
 			pm.proxyLogger.Errorf("Error proxying upstream request for model %s, path=%s", modelID, originalPath)
 			return
 		}
@@ -634,7 +621,7 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 	if found {
 		processGroup, err := pm.swapProcessGroup(modelID)
 		if err != nil {
-			pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error swapping process group: %s", err.Error()))
+			pm.sendErrorResponse(c, http.StatusInternalServerError, "error swapping process group: "+err.Error())
 			return
 		}
 
@@ -643,7 +630,7 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 		if useModelName != "" {
 			bodyBytes, err = sjson.SetBytes(bodyBytes, "model", useModelName)
 			if err != nil {
-				pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error rewriting model name in JSON: %s", err.Error()))
+				pm.sendErrorResponse(c, http.StatusInternalServerError, "error rewriting model name in JSON: "+err.Error())
 				return
 			}
 		}
@@ -669,19 +656,18 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 		pm.proxyLogger.Debugf("ProxyManager using ProxyPeer for model: %s", requestedModel)
 		modelID = requestedModel
 		nextHandler = pm.peerProxy.ProxyRequest
-
 	}
 
 	if nextHandler == nil {
-		pm.sendErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("could not find suitable inference handler for %s", requestedModel))
+		pm.sendErrorResponse(c, http.StatusBadRequest, "could not find suitable inference handler for "+requestedModel)
 		return
 	}
 
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	// dechunk it as we already have all the body bytes see issue #11
-	c.Request.Header.Del("transfer-encoding")
-	c.Request.Header.Set("content-length", strconv.Itoa(len(bodyBytes)))
+	c.Request.Header.Del("Transfer-Encoding")
+	c.Request.Header.Set("Content-Length", strconv.Itoa(len(bodyBytes)))
 	c.Request.ContentLength = int64(len(bodyBytes))
 
 	// issue #366 extract values that downstream handlers may need
@@ -690,15 +676,17 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 	ctx = context.WithValue(ctx, proxyCtxKey("model"), modelID)
 	c.Request = c.Request.WithContext(ctx)
 
-	if pm.metricsMonitor != nil && c.Request.Method == "POST" {
-		if err := pm.metricsMonitor.wrapHandler(modelID, c.Writer, c.Request, nextHandler); err != nil {
-			pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error proxying metrics wrapped request: %s", err.Error()))
+	if pm.metricsMonitor != nil && c.Request.Method == http.MethodPost {
+		err := pm.metricsMonitor.wrapHandler(modelID, c.Writer, c.Request, nextHandler)
+		if err != nil {
+			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying metrics wrapped request: "+err.Error())
 			pm.proxyLogger.Errorf("Error Proxying Metrics Wrapped Request model %s", modelID)
 			return
 		}
 	} else {
-		if err := nextHandler(modelID, c.Writer, c.Request); err != nil {
-			pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error proxying request: %s", err.Error()))
+		err := nextHandler(modelID, c.Writer, c.Request)
+		if err != nil {
+			pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
 			pm.proxyLogger.Errorf("Error Proxying Request for model %s", modelID)
 			return
 		}
@@ -708,7 +696,7 @@ func (pm *ProxyManager) ProxyInferenceHandler(c *gin.Context) {
 func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 	// Parse multipart form
 	if err := c.Request.ParseMultipartForm(32 << 20); err != nil { // 32MB max memory, larger files go to tmp disk
-		pm.sendErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("error parsing multipart form: %s", err.Error()))
+		pm.sendErrorResponse(c, http.StatusBadRequest, "error parsing multipart form: "+err.Error())
 		return
 	}
 
@@ -731,13 +719,13 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 
 	modelID, found := pm.config.RealModelName(requestedModel)
 	if !found {
-		pm.sendErrorResponse(c, http.StatusBadRequest, fmt.Sprintf("could not find real modelID for %s", requestedModel))
+		pm.sendErrorResponse(c, http.StatusBadRequest, "could not find real modelID for "+requestedModel)
 		return
 	}
 
 	processGroup, err := pm.swapProcessGroup(modelID)
 	if err != nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error swapping process group: %s", err.Error()))
+		pm.sendErrorResponse(c, http.StatusInternalServerError, "error swapping process group: "+err.Error())
 		return
 	}
 
@@ -825,7 +813,7 @@ func (pm *ProxyManager) ProxyOAIPostFormHandler(c *gin.Context) {
 
 	// Use the modified request for proxying
 	if err := processGroup.ProxyRequest(modelID, c.Writer, modifiedReq); err != nil {
-		pm.sendErrorResponse(c, http.StatusInternalServerError, fmt.Sprintf("error proxying request: %s", err.Error()))
+		pm.sendErrorResponse(c, http.StatusInternalServerError, "error proxying request: "+err.Error())
 		pm.proxyLogger.Errorf("Error Proxying Request for processGroup %s and model %s", processGroup.id, modelID)
 		return
 	}
@@ -890,7 +878,7 @@ func (pm *ProxyManager) apiKeyAuth() gin.HandlerFunc {
 
 		// Strip auth headers to prevent leakage to upstream
 		c.Request.Header.Del("Authorization")
-		c.Request.Header.Del("x-api-key")
+		c.Request.Header.Del("X-Api-Key")
 
 		c.Next()
 	}
@@ -933,7 +921,7 @@ func (pm *ProxyManager) findGroupByModelName(modelName string) *ProcessGroup {
 	return nil
 }
 
-func (pm *ProxyManager) SetVersion(buildDate string, commit string, version string) {
+func (pm *ProxyManager) SetVersion(buildDate, commit, version string) {
 	pm.Lock()
 	defer pm.Unlock()
 	pm.buildDate = buildDate
@@ -941,7 +929,7 @@ func (pm *ProxyManager) SetVersion(buildDate string, commit string, version stri
 	pm.version = version
 }
 
-// ProxyToFirstRunningProcess forwards the request to the any running process (llama-server)
+// ProxyToFirstRunningProcess forwards the request to the any running process (llama-server).
 func (pm *ProxyManager) ProxyToFirstRunningProcess(c *gin.Context) {
 	for _, processGroup := range pm.processGroups {
 		for _, process := range processGroup.processes {

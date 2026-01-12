@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fsnotify/fsnotify"
-	"github.com/gin-gonic/gin"
 	"github.com/LynxAIeu/llama-swap/event"
 	"github.com/LynxAIeu/llama-swap/proxy"
 	"github.com/LynxAIeu/llama-swap/proxy/config"
+	"github.com/fsnotify/fsnotify"
+	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -58,7 +58,7 @@ func main() {
 	}
 
 	// Validate TLS flags.
-	var useTLS = (*certFile != "" && *keyFile != "")
+	useTLS := (*certFile != "" && *keyFile != "")
 	if (*certFile != "" && *keyFile == "") ||
 		(*certFile == "" && *keyFile != "") {
 		fmt.Println("Error: Both --tls-cert-file and --tls-key-file must be provided for TLS.")
@@ -183,7 +183,8 @@ func main() {
 			fmt.Println("srv.Handler is not of type *proxy.ProxyManager")
 		}
 
-		if err := srv.Shutdown(ctx); err != nil {
+		err := srv.Shutdown(ctx)
+		if err != nil {
 			fmt.Printf("Server shutdown error: %v\n", err)
 		}
 		close(exitChan)

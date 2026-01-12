@@ -2,12 +2,14 @@ package proxy
 
 // package level registry of the different event types
 
-const ProcessStateChangeEventID = 0x01
-const ChatCompletionStatsEventID = 0x02
-const ConfigFileChangedEventID = 0x03
-const LogDataEventID = 0x04
-const TokenMetricsEventID = 0x05
-const ModelPreloadedEventID = 0x06
+const (
+	ProcessStateChangeEventID  = 0x01
+	ChatCompletionStatsEventID = 0x02
+	ConfigFileChangedEventID   = 0x03
+	LogDataEventID             = 0x04
+	TokenMetricsEventID        = 0x05
+	ModelPreloadedEventID      = 0x06
+)
 
 type ProcessStateChangeEvent struct {
 	ProcessName string
