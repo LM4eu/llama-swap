@@ -31,7 +31,7 @@ type proxyCtxKey string
 type ProxyManager struct {
 	sync.Mutex
 
-	config    config.Config
+	config    *config.Config
 	ginEngine *gin.Engine
 
 	// logging
@@ -56,7 +56,7 @@ type ProxyManager struct {
 	peerProxy *PeerProxy
 }
 
-func New(proxyConfig config.Config) *ProxyManager {
+func New(proxyConfig *config.Config) *ProxyManager {
 	// set up loggers
 
 	var muxLogger, upstreamLogger, proxyLogger *LogMonitor

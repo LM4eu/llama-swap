@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var processGroupTestConfig = config.AddDefaultGroupToConfig(config.Config{
+var processGroupTestConfig = config.AddDefaultGroupToConfig(&config.Config{
 	HealthCheckTimeout: 15,
 	Models: map[string]*config.ModelConfig{
 		"model1": getTestSimpleResponderConfig("model1"),
@@ -53,7 +53,7 @@ func TestProcessGroup_ProxyRequestSwapIsTrueParallel(t *testing.T) {
 		t.Skip("skipping slow test")
 	}
 
-	var processGroupTestConfig = config.AddDefaultGroupToConfig(config.Config{
+	var processGroupTestConfig = config.AddDefaultGroupToConfig(&config.Config{
 		HealthCheckTimeout: 15,
 		Models: map[string]*config.ModelConfig{
 			// use the same listening so if a model is already running, it will fail

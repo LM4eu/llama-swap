@@ -163,7 +163,7 @@ groups:
 
 	modelLoadingState := false
 
-	expected := Config{
+	expected := &Config{
 		LogLevel:      "info",
 		LogTimeFormat: "",
 		LogToStdout:   LogToStdoutProxy,

@@ -164,23 +164,23 @@ func (c *Config) FindConfig(modelName string) (*ModelConfig, string, bool) {
 	}
 }
 
-func LoadConfig(path string) (Config, error) {
+func LoadConfig(path string) (*Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return Config{}, err
+		return nil, err
 	}
 	defer file.Close()
 	return LoadConfigFromReader(file)
 }
 
-func LoadConfigFromReader(r io.Reader) (Config, error) {
+func LoadConfigFromReader(r io.Reader) (*Config, error) {
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return Config{}, err
+		return nil, err
 	}
 
 	// default configuration values
-	config := Config{
+	config := &Config{
 		HealthCheckTimeout: 120,
 		StartPort:          5800,
 		LogLevel:           "info",
@@ -188,9 +188,9 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 		LogToStdout:        LogToStdoutProxy,
 		MetricsMaxInMemory: 1000,
 	}
-	err = yaml.Unmarshal(data, &config)
+	err = yaml.Unmarshal(data, config)
 	if err != nil {
-		return Config{}, err
+		return nil, err
 	}
 
 	if config.HealthCheckTimeout < 15 {
@@ -199,13 +199,13 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	}
 
 	if config.StartPort < 1 {
-		return Config{}, fmt.Errorf("startPort must be greater than 1")
+		return nil, fmt.Errorf("startPort must be greater than 1")
 	}
 
 	switch config.LogToStdout {
 	case LogToStdoutProxy, LogToStdoutUpstream, LogToStdoutBoth, LogToStdoutNone:
 	default:
-		return Config{}, fmt.Errorf("logToStdout must be one of: proxy, upstream, both, none")
+		return nil, fmt.Errorf("logToStdout must be one of: proxy, upstream, both, none")
 	}
 
 	// Populate the aliases map
@@ -213,7 +213,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	for modelName, modelConfig := range config.Models {
 		for _, alias := range modelConfig.Aliases {
 			if _, found := config.aliases[alias]; found {
-				return Config{}, fmt.Errorf("duplicate alias %s found in model: %s", alias, modelName)
+				return nil, fmt.Errorf("duplicate alias %s found in model: %s", alias, modelName)
 			}
 			config.aliases[alias] = modelName
 		}
@@ -228,7 +228,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	*/
 	for _, macro := range config.Macros {
 		if err = validateMacro(macro.Name, macro.Value); err != nil {
-			return Config{}, err
+			return nil, err
 		}
 	}
 
@@ -250,7 +250,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 		// validate model macros
 		for _, macro := range modelConfig.Macros {
 			if err = validateMacro(macro.Name, macro.Value); err != nil {
-				return Config{}, fmt.Errorf("model %s: %s", modelId, err.Error())
+				return nil, fmt.Errorf("model %s: %s", modelId, err.Error())
 			}
 		}
 
@@ -296,7 +296,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 				var err error
 				result, err := substituteMacroInValue(modelConfig.Metadata, entry.Name, entry.Value)
 				if err != nil {
-					return Config{}, fmt.Errorf("model %s metadata: %s", modelId, err.Error())
+					return nil, fmt.Errorf("model %s metadata: %s", modelId, err.Error())
 				}
 				modelConfig.Metadata = result.(map[string]any)
 			}
@@ -309,7 +309,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 		proxyHasPort := strings.Contains(modelConfig.Proxy, "${PORT}")
 		if cmdHasPort || proxyHasPort { // either has it
 			if !cmdHasPort && proxyHasPort { // but both don't have it
-				return Config{}, fmt.Errorf("model %s: proxy uses ${PORT} but cmd does not - ${PORT} is only available when used in cmd", modelId)
+				return nil, fmt.Errorf("model %s: proxy uses ${PORT} but cmd does not - ${PORT} is only available when used in cmd", modelId)
 			}
 
 			// Add PORT macro and substitute it
@@ -326,7 +326,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 				var err error
 				result, err := substituteMacroInValue(modelConfig.Metadata, portEntry.Name, portEntry.Value)
 				if err != nil {
-					return Config{}, fmt.Errorf("model %s metadata: %s", modelId, err.Error())
+					return nil, fmt.Errorf("model %s metadata: %s", modelId, err.Error())
 				}
 				modelConfig.Metadata = result.(map[string]any)
 			}
@@ -352,23 +352,23 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 				}
 				// Reserved macros are always valid (they should have been substituted already)
 				if macroName == "PORT" || macroName == "MODEL_ID" {
-					return Config{}, fmt.Errorf("macro '${%s}' should have been substituted in %s.%s", macroName, modelId, fieldName)
+					return nil, fmt.Errorf("macro '${%s}' should have been substituted in %s.%s", macroName, modelId, fieldName)
 				}
 				// Any other macro is unknown
-				return Config{}, fmt.Errorf("unknown macro '${%s}' found in %s.%s", macroName, modelId, fieldName)
+				return nil, fmt.Errorf("unknown macro '${%s}' found in %s.%s", macroName, modelId, fieldName)
 			}
 		}
 
 		// Check for unknown macros in metadata
 		if len(modelConfig.Metadata) > 0 {
 			if err := validateMetadataForUnknownMacros(modelConfig.Metadata, modelId); err != nil {
-				return Config{}, err
+				return nil, err
 			}
 		}
 
 		// Validate the proxy URL.
 		if _, err := url.Parse(modelConfig.Proxy); err != nil {
-			return Config{}, fmt.Errorf(
+			return nil, fmt.Errorf(
 				"model %s: invalid proxy URL: %w", modelId, err,
 			)
 		}
@@ -391,13 +391,13 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 		for _, member := range groupConfig.Members {
 			// Check for duplicates within this group
 			if _, found := prevSet[member]; found {
-				return Config{}, fmt.Errorf("duplicate model member %s found in group: %s", member, groupID)
+				return nil, fmt.Errorf("duplicate model member %s found in group: %s", member, groupID)
 			}
 			prevSet[member] = true
 
 			// Check if member is used in another group
 			if existingGroup, exists := memberUsage[member]; exists {
-				return Config{}, fmt.Errorf("model member %s is used in multiple groups: %s and %s", member, existingGroup, groupID)
+				return nil, fmt.Errorf("model member %s is used in multiple groups: %s and %s", member, existingGroup, groupID)
 			}
 			memberUsage[member] = groupID
 		}
@@ -422,11 +422,11 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 	// check api keys validatity
 	for _, apikey := range config.RequiredAPIKeys {
 		if apikey == "" {
-			return Config{}, fmt.Errorf("empty api key found in apiKeys")
+			return nil, fmt.Errorf("empty api key found in apiKeys")
 		}
 
 		if strings.Contains(apikey, " ") {
-			return Config{}, fmt.Errorf("api key cannot contain spaces: `%s`", apikey)
+			return nil, fmt.Errorf("api key cannot contain spaces: `%s`", apikey)
 		}
 	}
 
@@ -434,7 +434,7 @@ func LoadConfigFromReader(r io.Reader) (Config, error) {
 }
 
 // rewrites the yaml to include a default group with any orphaned models
-func AddDefaultGroupToConfig(config Config) Config {
+func AddDefaultGroupToConfig(config *Config) *Config {
 
 	if config.Groups == nil {
 		config.Groups = make(map[string]GroupConfig)
