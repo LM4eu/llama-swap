@@ -114,23 +114,39 @@ type HookOnStartup struct {
 }
 
 type Config struct {
-	Models               map[string]*ModelConfig `yaml:"models"`
-	Peers                PeerDictionaryConfig    `yaml:"peers"`
-	aliases              map[string]string
-	Groups               map[string]GroupConfig `yaml:"groups"`
-	Profiles             map[string][]string    `yaml:"profiles"`
-	LogToStdout          string                 `yaml:"logToStdout"`
-	LogTimeFormat        string                 `yaml:"logTimeFormat"`
-	LogLevel             string                 `yaml:"logLevel"`
-	Macros               MacroList              `yaml:"macros"`
-	Hooks                HooksConfig            `yaml:"hooks"`
-	RequiredAPIKeys      []string               `yaml:"apiKeys"`
-	MetricsMaxInMemory   int                    `yaml:"metricsMaxInMemory"`
-	HealthCheckTimeout   int                    `yaml:"healthCheckTimeout"`
-	StartPort            int                    `yaml:"startPort"`
-	SendLoadingState     bool                   `yaml:"sendLoadingState"`
-	IncludeAliasesInList bool                   `yaml:"includeAliasesInList"`
-	LogRequests          bool                   `yaml:"logRequests"`
+	Models   map[string]*ModelConfig `yaml:"models"` /* key is model ID */
+	Profiles map[string][]string     `yaml:"profiles"`
+	Groups   map[string]GroupConfig  `yaml:"groups"` /* key is group ID */
+
+	// map aliases to actual model IDs
+	aliases map[string]string
+
+	Peers PeerDictionaryConfig `yaml:"peers"`
+
+	LogToStdout   string `yaml:"logToStdout"`
+	LogLevel      string `yaml:"logLevel"`
+	LogTimeFormat string `yaml:"logTimeFormat"`
+
+	RequiredAPIKeys []string `yaml:"apiKeys"`
+
+	// for key/value replacements in model's cmd, cmdStop, proxy, checkEndPoint
+	Macros MacroList `yaml:"macros"`
+
+	// hooks, see: #209
+	Hooks HooksConfig `yaml:"hooks"`
+
+	// automatic port assignments
+	StartPort int `yaml:"startPort"`
+
+	HealthCheckTimeout int  `yaml:"healthCheckTimeout"`
+	MetricsMaxInMemory int  `yaml:"metricsMaxInMemory"`
+	LogRequests        bool `yaml:"logRequests"`
+
+	// send loading state in reasoning
+	SendLoadingState bool `yaml:"sendLoadingState"`
+
+	// present aliases to /v1/models OpenAI API listing
+	IncludeAliasesInList bool `yaml:"includeAliasesInList"`
 }
 
 func (c *Config) RealModelName(search string) (string, bool) {

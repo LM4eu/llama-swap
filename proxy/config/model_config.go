@@ -8,22 +8,37 @@ import (
 )
 
 type ModelConfig struct {
-	Metadata         map[string]any `yaml:"metadata"`
-	SendLoadingState *bool          `yaml:"sendLoadingState"`
-	Filters          ModelFilters   `yaml:"filters"`
-	Cmd              string         `yaml:"cmd"`
-	CmdStop          string         `yaml:"cmdStop"`
-	CheckEndpoint    string         `yaml:"checkEndpoint"`
-	Proxy            string         `yaml:"proxy"`
-	Description      string         `yaml:"description"`
-	UseModelName     string         `yaml:"useModelName"`
-	Name             string         `yaml:"name"`
-	Aliases          []string       `yaml:"aliases"`
-	Macros           MacroList      `yaml:"macros"`
-	Env              []string       `yaml:"env"`
-	ConcurrencyLimit int            `yaml:"concurrencyLimit"`
-	UnloadAfter      int            `yaml:"ttl"`
-	Unlisted         bool           `yaml:"unlisted"`
+	// Metadata: see #264
+	// Arbitrary metadata that can be exposed through the API
+	Metadata map[string]any `yaml:"metadata"`
+
+	// override global setting
+	SendLoadingState *bool `yaml:"sendLoadingState"`
+
+	// Model filters see issue #174
+	Filters ModelFilters `yaml:"filters"`
+
+	Cmd           string   `yaml:"cmd"`
+	CmdStop       string   `yaml:"cmdStop"`
+	Aliases       []string `yaml:"aliases"`
+	Env           []string `yaml:"env"`
+	CheckEndpoint string   `yaml:"checkEndpoint"`
+	Proxy         string   `yaml:"proxy"`
+	UseModelName  string   `yaml:"useModelName"`
+
+	// #179 for /v1/models
+	Name        string `yaml:"name"`
+	Description string `yaml:"description"`
+
+	// Macros: see #264
+	// Model level macros take precedence over the global macros
+	Macros MacroList `yaml:"macros"`
+
+	// Limit concurrency of HTTP requests to process
+	ConcurrencyLimit int `yaml:"concurrencyLimit"`
+
+	UnloadAfter int  `yaml:"ttl"`
+	Unlisted    bool `yaml:"unlisted"`
 }
 
 func (m *ModelConfig) UnmarshalYAML(unmarshal func(any) error) error {

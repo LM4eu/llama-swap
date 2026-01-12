@@ -102,14 +102,21 @@ const (
 )
 
 type LogMonitor struct {
-	stdout     io.Writer
-	eventbus   *event.Dispatcher
-	buffer     *circularBuffer
-	prefix     string
+	// typically this can be os.Stdout
+	stdout io.Writer
+
+	eventbus *event.Dispatcher
+	buffer   *circularBuffer
+	prefix   string
+
+	// timestamps
 	timeFormat string
-	level      LogLevel
-	mu         sync.RWMutex
-	bufferMu   sync.RWMutex
+
+	// logging levels
+	level LogLevel
+
+	mu       sync.RWMutex
+	bufferMu sync.RWMutex
 }
 
 func NewLogMonitor() *LogMonitor {
