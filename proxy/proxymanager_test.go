@@ -58,7 +58,7 @@ func TestProxyManager_SwapProcessCorrectly(t *testing.T) {
 	defer proxy.StopProcesses(StopWaitForInflightRequest)
 
 	for _, modelName := range []string{"model1", "model2"} {
-		reqBody := fmt.Sprintf(`{"model":"%s"}`, modelName)
+		reqBody := fmt.Sprintf(`{"model":%q}`, modelName)
 		req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewBufferString(reqBody))
 		w := CreateTestResponseRecorder()
 
@@ -96,7 +96,7 @@ func TestProxyManager_SwapMultiProcess(t *testing.T) {
 	tests := []string{"model1", "model2"}
 	for _, requestedModel := range tests {
 		t.Run(requestedModel, func(t *testing.T) {
-			reqBody := fmt.Sprintf(`{"model":"%s"}`, requestedModel)
+			reqBody := fmt.Sprintf(`{"model":%q}`, requestedModel)
 			req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", bytes.NewBufferString(reqBody))
 			w := CreateTestResponseRecorder()
 
